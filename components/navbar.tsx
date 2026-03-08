@@ -3,6 +3,7 @@ import { Search, Heart, ShoppingBag, User } from "lucide-react"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export function Navbar() {
   return (
@@ -80,6 +81,9 @@ export function Navbar() {
             <ShoppingBag className="h-5 w-5" />
             <span className="sr-only">Cart</span>
           </Button>
+
+          {/* Theme Toggle Button */}
+          <ThemeToggle />
 
           <Button className="hidden sm:flex rounded-full px-6 font-semibold shadow-sm transition-transform hover:scale-105">
             Login
