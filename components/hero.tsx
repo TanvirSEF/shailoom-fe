@@ -45,17 +45,17 @@ const BANNERS = [
 ]
 
 export function Hero() {
-  const plugin = React.useRef(
-    Autoplay({ delay: 5000, stopOnInteraction: true })
-  )
-
   return (
     <section className="relative w-full overflow-hidden">
       <Carousel
-        plugins={[plugin.current] as any}
+        plugins={[
+          Autoplay({
+            delay: 5000,
+            stopOnInteraction: false,
+            stopOnMouseEnter: true,
+          }),
+        ] as any}
         className="w-full"
-        onMouseEnter={() => plugin.current.stop()}
-        onMouseLeave={() => plugin.current.reset()}
         opts={{
           loop: true,
         }}
