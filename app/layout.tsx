@@ -2,9 +2,9 @@ import { DM_Sans, Geist_Mono } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { cn } from "@/lib/utils";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+import { cn } from "@/lib/utils"
+import { Navbar } from "@/components/navbar"
+import { Footer } from "@/components/footer"
 
 const fontSans = DM_Sans({
   subsets: ["latin"],
@@ -25,9 +25,17 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", fontSans.variable)}
+      className={cn(
+        "antialiased",
+        fontMono.variable,
+        "font-sans",
+        fontSans.variable
+      )}
     >
-      <body suppressHydrationWarning className="min-h-screen bg-background text-foreground flex flex-col">
+      <body
+        suppressHydrationWarning
+        className="flex min-h-screen flex-col bg-background text-foreground"
+      >
         <ThemeProvider>
           <Navbar />
           <main className="flex-1">{children}</main>

@@ -30,24 +30,24 @@ const CATEGORIES = [
 
 export function Categories() {
   return (
-    <section className="py-16 px-6 md:py-24 md:px-12 bg-background">
-      <div className="max-w-7xl mx-auto">
+    <section className="bg-background px-6 py-16 md:px-12 md:py-24">
+      <div className="mx-auto max-w-7xl">
         <div className="mb-12 text-center md:text-left">
-          <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl mb-4">
+          <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
             Featured Categories
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl">
-            Explore our handpicked selections of the finest ethnic wear, 
-            crafted to perfection for every occasion.
+          <p className="max-w-2xl text-lg text-muted-foreground">
+            Explore our handpicked selections of the finest ethnic wear, crafted
+            to perfection for every occasion.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {CATEGORIES.map((category) => (
             <Link
               key={category.id}
               href={category.href}
-              className="group relative flex flex-col overflow-hidden rounded-2xl bg-muted border border-border/50 hover:border-primary/50 transition-all duration-500 shadow-sm hover:shadow-xl"
+              className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/50 bg-muted shadow-sm transition-all duration-500 hover:border-primary/50 hover:shadow-xl"
             >
               <div className="relative aspect-[4/5] w-full overflow-hidden">
                 <Image
@@ -56,20 +56,20 @@ export function Categories() {
                   fill
                   className="object-cover transition-transform duration-700 group-hover:scale-110"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-60 transition-opacity duration-500 group-hover:opacity-80" />
               </div>
 
-              <div className="absolute bottom-0 left-0 right-0 p-8 text-white transform transition-transform duration-500">
-                <p className="text-sm font-medium mb-1 opacity-80 uppercase tracking-wider">
+              <div className="absolute right-0 bottom-0 left-0 transform p-8 text-white transition-transform duration-500">
+                <p className="mb-1 text-sm font-medium tracking-wider uppercase opacity-80">
                   Shailoom Collection
                 </p>
-                <h3 className="text-2xl font-bold mb-2 group-hover:translate-x-2 transition-transform duration-500">
+                <h3 className="mb-2 text-2xl font-bold transition-transform duration-500 group-hover:translate-x-2">
                   {category.name}
                 </h3>
-                <p className="text-sm text-gray-200 mb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                <p className="mb-4 text-sm text-gray-200 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
                   {category.description}
                 </p>
-                <div className="flex items-center gap-2 text-sm font-semibold text-white/90 group-hover:text-white transition-colors">
+                <div className="flex items-center gap-2 text-sm font-semibold text-white/90 transition-colors group-hover:text-white">
                   Shop Category <ArrowRight className="h-4 w-4" />
                 </div>
               </div>

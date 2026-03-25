@@ -1,6 +1,8 @@
 import { Hero } from "@/components/hero"
 import { Categories } from "@/components/categories"
 import { NewArrivals } from "@/components/new-arrivals"
+import { PromotionalBanner } from "@/components/promotional-banner"
+import { OurStory } from "@/components/our-story"
 
 export default function Page() {
   return (
@@ -8,7 +10,8 @@ export default function Page() {
       <Hero />
       <Categories />
       <NewArrivals />
-      {/* Additional sections can be added here */}
+      <PromotionalBanner />
+      <OurStory />
     </main>
   )
 }
