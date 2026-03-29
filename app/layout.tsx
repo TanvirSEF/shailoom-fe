@@ -5,6 +5,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
+import { Toaster } from "sonner"
+import { AnimationPortal } from "@/components/fly-to-cart-animation"
 
 const fontSans = DM_Sans({
   subsets: ["latin"],
@@ -40,6 +42,8 @@ export default function RootLayout({
           <Navbar />
           <main className="flex-1">{children}</main>
           <Footer />
+          <Toaster richColors position="bottom-right" closeButton />
+          <AnimationPortal />
         </ThemeProvider>
       </body>
     </html>

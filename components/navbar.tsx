@@ -1,5 +1,9 @@
+"use client"
+
 import Link from "next/link"
 import { Search, Heart, ShoppingBag, User, Menu } from "lucide-react"
+import * as React from "react"
+import { useCartStore } from "@/store/use-cart-store"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -11,8 +15,29 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { cn } from "@/lib/utils"
 
 export function Navbar() {
+  const itemCount = useCartStore((state) => 
+    state.items.reduce((total, item) => total + item.quantity, 0)
+  )
+  const [mounted, setMounted] = React.useState(false)
+  const [isAnimating, setIsAnimating] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  React.useEffect(() => {
+    if (itemCount > 0) {
+      setIsAnimating(true)
+      const timer = setTimeout(() => setIsAnimating(false), 300)
+      return () => clearTimeout(timer)
+    }
+  }, [itemCount])
+
+  const displayCount = mounted ? itemCount : 0
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
@@ -125,7 +150,7 @@ export function Navbar() {
             Three-Piece
           </Link>
           <Link
-            href="/saree"
+            href="/shop/sarees"
             className="text-sm font-medium transition-colors hover:text-primary"
           >
             Saree
@@ -171,14 +196,25 @@ export function Navbar() {
             <span className="sr-only">Wishlist</span>
           </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full transition-transform hover:scale-105 hover:text-primary"
-          >
-            <ShoppingBag className="h-5 w-5" />
-            <span className="sr-only">Cart</span>
-          </Button>
+          <Link href="/cart">
+            <Button
+              id="cart-icon-nav"
+              variant="ghost"
+              size="icon"
+              className="relative rounded-full transition-transform hover:scale-105 hover:text-primary"
+            >
+              <ShoppingBag className="h-5 w-5" />
+              {displayCount > 0 && (
+                <span className={cn(
+                  "absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow-lg transition-transform duration-300",
+                  isAnimating ? "scale-125 bg-emerald-500" : "scale-100"
+                )}>
+                  {displayCount}
+                </span>
+              )}
+              <span className="sr-only">Cart</span>
+            </Button>
+          </Link>
 
           {/* Theme Toggle Button */}
           <ThemeToggle />
