@@ -22,7 +22,7 @@ const CATEGORIES = [
   {
     id: 3,
     name: "New Season Drop",
-    image: "/images/categories/new-season.png",
+    image: "/images/categories/new-season-new.png",
     href: "/shop/new-arrivals",
     description: "Explore the latest trends and styles",
   },
