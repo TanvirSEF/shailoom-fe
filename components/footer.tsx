@@ -86,7 +86,7 @@ export function Footer() {
               Flash Sales & Offers
             </Link>
             <Link
-              href="/about"
+              href="/about-us"
               className="w-fit text-sm text-muted-foreground transition-colors hover:text-primary"
             >
               Our Story
@@ -98,6 +98,12 @@ export function Footer() {
             <h3 className="mb-2 text-lg font-semibold text-foreground">
               Support
             </h3>
+            <Link
+              href="/contact-us"
+              className="w-fit text-sm text-muted-foreground transition-colors hover:text-primary"
+            >
+              Contact Us
+            </Link>
             <Link
               href="/faq"
               className="w-fit text-sm text-muted-foreground transition-colors hover:text-primary"

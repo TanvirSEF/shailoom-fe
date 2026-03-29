@@ -111,15 +111,19 @@ export function Navbar() {
 
                 {/* Mobile Auth Buttons */}
                 <div className="mt-4 flex flex-col gap-3 border-t pt-4">
-                  <Button
-                    variant="outline"
-                    className="w-full rounded-full font-semibold shadow-sm transition-transform hover:scale-105"
-                  >
-                    Login
-                  </Button>
-                  <Button className="w-full rounded-full font-semibold shadow-sm transition-transform hover:scale-105">
-                    Sign Up
-                  </Button>
+                  <Link href="/login" className="w-full">
+                    <Button
+                      variant="outline"
+                      className="w-full rounded-full font-semibold shadow-sm transition-transform hover:scale-105"
+                    >
+                      Login
+                    </Button>
+                  </Link>
+                  <Link href="/signup" className="w-full">
+                    <Button className="w-full rounded-full font-semibold shadow-sm transition-transform hover:scale-105">
+                      Sign Up
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </SheetContent>
@@ -220,15 +224,19 @@ export function Navbar() {
           <ThemeToggle />
 
           <div className="ml-1 hidden items-center gap-2 sm:flex">
-            <Button
-              variant="ghost"
-              className="rounded-full px-5 font-semibold transition-transform hover:scale-105"
-            >
-              Login
-            </Button>
-            <Button className="rounded-full px-5 font-semibold shadow-sm transition-transform hover:scale-105">
-              Sign Up
-            </Button>
+            <Link href="/login">
+              <Button
+                variant="ghost"
+                className="rounded-full px-5 font-semibold transition-transform hover:scale-105"
+              >
+                Login
+              </Button>
+            </Link>
+            <Link href="/signup">
+              <Button className="rounded-full px-5 font-semibold shadow-sm transition-transform hover:scale-105">
+                Sign Up
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
