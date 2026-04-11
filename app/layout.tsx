@@ -7,6 +7,7 @@ import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Toaster } from "sonner"
 import { AnimationPortal } from "@/components/fly-to-cart-animation"
+import QueryProvider from "@/components/providers/query-provider"
 
 const fontSans = DM_Sans({
   subsets: ["latin"],
@@ -39,11 +40,13 @@ export default function RootLayout({
         className="flex min-h-screen flex-col bg-background text-foreground"
       >
         <ThemeProvider>
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <Toaster richColors position="bottom-right" closeButton />
-          <AnimationPortal />
+          <QueryProvider>
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <Toaster richColors position="bottom-right" closeButton />
+            <AnimationPortal />
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>
