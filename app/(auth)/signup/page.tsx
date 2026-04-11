@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowLeft, Mail, Lock, User, Eye, EyeOff, 
-  ShieldCheck, Phone, MapPin, Loader2 
+  ShieldCheck, Phone, Loader2 
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -37,7 +37,6 @@ export default function SignupPage() {
       email: "",
       password: "",
       phone_number: "",
-      address: "",
     },
   });
 
@@ -153,75 +152,54 @@ export default function SignupPage() {
                 {errors.email && <p className="text-xs font-semibold text-destructive">{errors.email.message}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                {/* Phone Number */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="phone_number" className={cn(errors.phone_number && "text-destructive")}>Phone Number</Label>
-                  <div className="relative group">
-                    <Phone className={cn(
-                      "absolute left-3 top-3.5 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary",
-                      errors.phone_number && "text-destructive"
-                    )} />
-                    <Input 
-                      id="phone_number" 
-                      placeholder="+880..." 
-                      {...register("phone_number")}
-                      className={cn(
-                        "h-12 rounded-xl pl-10 border-border/50 focus-visible:ring-primary shadow-sm bg-background/50",
-                        errors.phone_number && "border-destructive focus-visible:ring-destructive"
-                      )} 
-                    />
-                  </div>
-                </div>
-
-                {/* Password */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="password" className={cn(errors.password && "text-destructive")}>Password</Label>
-                  <div className="relative group">
-                    <Lock className={cn(
-                      "absolute left-3 top-3.5 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary",
-                      errors.password && "text-destructive"
-                    )} />
-                    <Input 
-                      id="password" 
-                      type={showPassword ? "text" : "password"} 
-                      {...register("password")}
-                      className={cn(
-                        "h-12 rounded-xl pl-10 pr-10 border-border/50 focus-visible:ring-primary shadow-sm bg-background/50",
-                        errors.password && "border-destructive focus-visible:ring-destructive"
-                      )} 
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3.5 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {errors.password && <p className="text-xs font-semibold text-destructive">{errors.password.message}</p>}
-                </div>
-              </div>
-
-              {/* Address */}
+              {/* Phone Number */}
               <div className="space-y-1.5">
-                <Label htmlFor="address" className={cn(errors.address && "text-destructive")}>Address</Label>
+                <Label htmlFor="phone_number" className={cn(errors.phone_number && "text-destructive")}>Phone Number</Label>
                 <div className="relative group">
-                  <MapPin className={cn(
+                  <Phone className={cn(
                     "absolute left-3 top-3.5 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary",
-                    errors.address && "text-destructive"
+                    errors.phone_number && "text-destructive"
                   )} />
                   <Input 
-                    id="address" 
-                    placeholder="123 Main St, Dhaka" 
-                    {...register("address")}
+                    id="phone_number" 
+                    placeholder="+880..." 
+                    {...register("phone_number")}
                     className={cn(
                       "h-12 rounded-xl pl-10 border-border/50 focus-visible:ring-primary shadow-sm bg-background/50",
-                      errors.address && "border-destructive focus-visible:ring-destructive"
+                      errors.phone_number && "border-destructive focus-visible:ring-destructive"
                     )} 
                   />
                 </div>
               </div>
+
+              {/* Password */}
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className={cn(errors.password && "text-destructive")}>Password</Label>
+                <div className="relative group">
+                  <Lock className={cn(
+                    "absolute left-3 top-3.5 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary",
+                    errors.password && "text-destructive"
+                  )} />
+                  <Input 
+                    id="password" 
+                    type={showPassword ? "text" : "password"} 
+                    {...register("password")}
+                    className={cn(
+                      "h-12 rounded-xl pl-10 pr-10 border-border/50 focus-visible:ring-primary shadow-sm bg-background/50",
+                      errors.password && "border-destructive focus-visible:ring-destructive"
+                    )} 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3.5 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {errors.password && <p className="text-xs font-semibold text-destructive">{errors.password.message}</p>}
+              </div>
+
 
               <div className="flex items-center space-x-2 py-2">
                 <input type="checkbox" required id="terms" className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
