@@ -39,23 +39,30 @@ function ThemeHotkey() {
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.defaultPrevented || event.repeat) {
-        return
-      }
+      try {
+        // Defensive check for event and key
+        const key = event?.key;
+        if (typeof key !== "string") return;
 
-      if (event.metaKey || event.ctrlKey || event.altKey) {
-        return
-      }
+        // Early return if not the desired key (case-insensitive)
+        if (key.toLowerCase() !== "d") return;
 
-      if (event.key.toLowerCase() !== "d") {
-        return
-      }
+        // Skip if modifiers are pressed or it's a repeat event
+        if (event.metaKey || event.ctrlKey || event.altKey || event.repeat || event.defaultPrevented) {
+          return;
+        }
 
-      if (isTypingTarget(event.target)) {
-        return
-      }
+        // Skip if the user is typing in an input/textarea
+        if (isTypingTarget(event.target)) {
+          return;
+        }
 
-      setTheme(resolvedTheme === "dark" ? "light" : "dark")
+        // Toggle theme
+        setTheme(resolvedTheme === "dark" ? "light" : "dark");
+      } catch (error) {
+        // Absorb any errors to prevent the app from crashing due to a side-feature (hotkey)
+        console.error("Theme toggle hotkey error:", error);
+      }
     }
 
     window.addEventListener("keydown", onKeyDown)
