@@ -1,9 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { Search, Heart, ShoppingBag, User, Menu } from "lucide-react"
+import { Search, Heart, ShoppingBag, User, Menu, LogOut, Package } from "lucide-react"
 import * as React from "react"
 import { useCartStore } from "@/store/use-cart-store"
+import { useAuthStore } from "@/store/use-auth-store"
+import { AnimatePresence, motion } from "framer-motion"
+import { useRouter } from "next/navigation"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -18,11 +21,29 @@ import {
 import { cn } from "@/lib/utils"
 
 export function Navbar() {
+  const router = useRouter()
   const itemCount = useCartStore((state) => 
     state.items.reduce((total, item) => total + item.quantity, 0)
   )
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const logout = useAuthStore((state) => state.logout)
+  
   const [mounted, setMounted] = React.useState(false)
   const [isAnimating, setIsAnimating] = React.useState(false)
+  const [isDropdownOpen, setIsDropdownOpen] = React.useState(false)
+  
+  // Close dropdown on outside click
+  const dropdownRef = React.useRef<HTMLDivElement>(null)
+  
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   React.useEffect(() => {
     setMounted(true)
@@ -37,6 +58,13 @@ export function Navbar() {
   }, [itemCount])
 
   const displayCount = mounted ? itemCount : 0
+  const isUserLoggedIn = mounted ? isAuthenticated : false
+
+  const handleLogout = () => {
+    logout()
+    setIsDropdownOpen(false)
+    router.push("/login")
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -109,21 +137,40 @@ export function Navbar() {
                   </Link>
                 </nav>
 
-                {/* Mobile Auth Buttons */}
+                {/* Mobile Auth Buttons / Profile Links */}
                 <div className="mt-4 flex flex-col gap-3 border-t pt-4">
-                  <Link href="/login" className="w-full">
-                    <Button
-                      variant="outline"
-                      className="w-full rounded-full font-semibold shadow-sm transition-transform hover:scale-105"
-                    >
-                      Login
-                    </Button>
-                  </Link>
-                  <Link href="/signup" className="w-full">
-                    <Button className="w-full rounded-full font-semibold shadow-sm transition-transform hover:scale-105">
-                      Sign Up
-                    </Button>
-                  </Link>
+                  {isUserLoggedIn ? (
+                    <>
+                      <Link href="/account/profile" className="flex items-center gap-2 text-lg font-medium hover:text-primary transition-colors py-2">
+                        <User className="h-5 w-5" /> Profile
+                      </Link>
+                      <Link href="/account/orders" className="flex items-center gap-2 text-lg font-medium hover:text-primary transition-colors py-2">
+                        <Package className="h-5 w-5" /> My Orders
+                      </Link>
+                      <Link href="/account/wishlist" className="flex items-center gap-2 text-lg font-medium hover:text-primary transition-colors py-2">
+                        <Heart className="h-5 w-5" /> Wishlist
+                      </Link>
+                      <button onClick={handleLogout} className="flex items-center gap-2 text-lg font-medium text-destructive hover:opacity-80 transition-opacity py-2 text-left">
+                        <LogOut className="h-5 w-5" /> Logout
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link href="/login" className="w-full">
+                        <Button
+                          variant="outline"
+                          className="w-full rounded-full font-semibold shadow-sm transition-transform hover:scale-105"
+                        >
+                          Login
+                        </Button>
+                      </Link>
+                      <Link href="/signup" className="w-full">
+                        <Button className="w-full rounded-full font-semibold shadow-sm transition-transform hover:scale-105">
+                          Sign Up
+                        </Button>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </SheetContent>
@@ -223,20 +270,75 @@ export function Navbar() {
           {/* Theme Toggle Button */}
           <ThemeToggle />
 
-          <div className="ml-1 hidden items-center gap-2 sm:flex">
-            <Link href="/login">
-              <Button
-                variant="ghost"
-                className="rounded-full px-5 font-semibold transition-transform hover:scale-105"
-              >
-                Login
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button className="rounded-full px-5 font-semibold shadow-sm transition-transform hover:scale-105">
-                Sign Up
-              </Button>
-            </Link>
+          <div className="ml-1 hidden items-center gap-2 sm:flex relative" ref={dropdownRef}>
+            {isUserLoggedIn ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className={cn(
+                    "rounded-full transition-all hover:bg-primary/10 hover:text-primary",
+                    isDropdownOpen && "bg-primary/10 text-primary"
+                  )}
+                >
+                  <User className="h-5 w-5" />
+                </Button>
+                
+                <AnimatePresence>
+                  {isDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 top-12 w-56 rounded-2xl border bg-card p-2 shadow-2xl"
+                    >
+                      <div className="mb-2 px-3 py-2 border-b">
+                        <p className="text-sm font-medium">My Account</p>
+                      </div>
+                      <div className="flex flex-col space-y-1">
+                        <Link href="/account/profile" onClick={() => setIsDropdownOpen(false)}>
+                          <div className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary text-muted-foreground cursor-pointer">
+                            <User className="h-4 w-4" /> Profile
+                          </div>
+                        </Link>
+                        <Link href="/account/orders" onClick={() => setIsDropdownOpen(false)}>
+                          <div className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary text-muted-foreground cursor-pointer">
+                            <Package className="h-4 w-4" /> My Orders
+                          </div>
+                        </Link>
+                        <Link href="/account/wishlist" onClick={() => setIsDropdownOpen(false)}>
+                          <div className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary text-muted-foreground cursor-pointer">
+                            <Heart className="h-4 w-4" /> Wishlist
+                          </div>
+                        </Link>
+                        <div className="my-1 border-t border-border" />
+                        <button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors hover:bg-destructive/10 text-destructive cursor-pointer">
+                          <LogOut className="h-4 w-4" /> Logout
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button
+                    variant="ghost"
+                    className="rounded-full px-5 font-semibold transition-transform hover:scale-105"
+                  >
+                    Login
+                  </Button>
+                </Link>
+                <Link href="/signup">
+                  <Button className="rounded-full px-5 font-semibold shadow-sm transition-transform hover:scale-105">
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -3,16 +3,58 @@
 import * as React from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { motion } from "framer-motion"
-import { ArrowLeft, Github, Chrome as Google, Facebook, Mail, Lock, Eye, EyeOff } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { ArrowLeft, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+import { loginSchema, type LoginValues } from "@/lib/validations/auth.schema"
+import { useApiMutation } from "@/hooks/use-api"
+import { authService } from "@/lib/services/auth-service"
+import { useAuthStore } from "@/store/use-auth-store"
+import { AuthResponse } from "@/types/auth"
 
 export default function LoginPage() {
+  const router = useRouter()
+  const setAuth = useAuthStore((state) => state.setAuth)
   const [showPassword, setShowPassword] = React.useState(false)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  })
+
+  const { mutate: login, isPending } = useApiMutation<AuthResponse, LoginValues>(
+    authService.login,
+    {
+      onSuccess: (data) => {
+        setAuth(data.access_token, data.role)
+        toast.success("Welcome back!")
+        router.push("/")
+      },
+      onError: (error: any) => {
+        const message =
+          error.response?.data?.detail || "Invalid email or password."
+        toast.error(message)
+      },
+    }
+  )
+
+  const onSubmit = (data: LoginValues) => {
+    login(data)
+  }
 
   return (
     <div className="flex min-h-screen w-full bg-background overflow-hidden">
@@ -50,44 +92,46 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <Button variant="outline" className="h-12 rounded-xl transition-all hover:scale-[1.02]">
-                  <Google className="mr-2 h-4 w-4" /> Google
-                </Button>
-                <Button variant="outline" className="h-12 rounded-xl transition-all hover:scale-[1.02]">
-                  <Facebook className="mr-2 h-4 w-4 fill-blue-600 text-blue-600" /> Facebook
-                </Button>
-              </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-4 text-muted-foreground tracking-widest">Or continue with</span>
-                </div>
-              </div>
-
-              <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+              <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="email" className={cn(errors.email && "text-destructive")}>Email Address</Label>
                   <div className="relative group">
-                    <Mail className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
-                    <Input id="email" type="email" placeholder="name@example.com" className="h-12 rounded-xl pl-10 border-border/50 focus-visible:ring-primary shadow-sm" />
+                    <Mail className={cn(
+                      "absolute left-3 top-3.5 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary",
+                      errors.email && "text-destructive"
+                    )} />
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      placeholder="name@example.com" 
+                      {...register("email")}
+                      className={cn(
+                        "h-12 rounded-xl pl-10 border-border/50 focus-visible:ring-primary shadow-sm",
+                        errors.email && "border-destructive focus-visible:ring-destructive"
+                      )} 
+                    />
                   </div>
+                  {errors.email && <p className="text-xs font-semibold text-destructive">{errors.email.message}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="password" className={cn(errors.password && "text-destructive")}>Password</Label>
                     <Link href="#" className="text-xs font-bold text-primary hover:underline">Forgot password?</Link>
                   </div>
                   <div className="relative group">
-                    <Lock className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                    <Lock className={cn(
+                      "absolute left-3 top-3.5 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary",
+                      errors.password && "text-destructive"
+                    )} />
                     <Input 
                       id="password" 
                       type={showPassword ? "text" : "password"} 
-                      className="h-12 rounded-xl pl-10 pr-10 border-border/50 focus-visible:ring-primary shadow-sm" 
+                      {...register("password")}
+                      className={cn(
+                        "h-12 rounded-xl pl-10 pr-10 border-border/50 focus-visible:ring-primary shadow-sm",
+                        errors.password && "border-destructive focus-visible:ring-destructive"
+                      )} 
                     />
                     <button
                       type="button"
@@ -97,10 +141,22 @@ export default function LoginPage() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  {errors.password && <p className="text-xs font-semibold text-destructive">{errors.password.message}</p>}
                 </div>
 
-                <Button className="w-full h-14 rounded-2xl text-lg font-bold uppercase tracking-[0.2em] shadow-xl transition-all hover:scale-[1.01] active:scale-[0.98]">
-                  Sign In
+                <Button 
+                  type="submit"
+                  disabled={isPending}
+                  className="w-full h-14 rounded-2xl text-lg font-bold uppercase tracking-[0.2em] shadow-xl transition-all hover:scale-[1.01] active:scale-[0.98] relative overflow-hidden group"
+                >
+                  {isPending ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    <>
+                      <span className="relative z-10">Sign In</span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </>
+                  )}
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground">

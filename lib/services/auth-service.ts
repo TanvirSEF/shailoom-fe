@@ -8,7 +8,15 @@ export const authService = {
     return response.data;
   },
   login: async (data: LoginValues) => {
-    const response = await apiClient.post<AuthResponse>("/auth/login", data);
+    const formData = new URLSearchParams();
+    formData.append("username", data.email);
+    formData.append("password", data.password);
+    
+    const response = await apiClient.post<AuthResponse>("/auth/login", formData, {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
     return response.data;
   },
   refreshToken: async () => {
