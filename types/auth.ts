@@ -9,6 +9,12 @@ export interface User {
   updated_at: string;
 }
 
+export interface UserUpdate {
+  username?: string;
+  phone_number?: string;
+  address?: string;
+}
+
 export interface AuthResponse {
   message: string;
   access_token: string;

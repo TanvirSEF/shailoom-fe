@@ -19,6 +19,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
+import { useApiQuery } from "@/hooks/use-api"
+import { User as UserType } from "@/types/auth"
 
 export function Navbar() {
   const router = useRouter()
@@ -59,6 +61,14 @@ export function Navbar() {
 
   const displayCount = mounted ? itemCount : 0
   const isUserLoggedIn = mounted ? isAuthenticated : false
+
+  // Fetch the user profile dynamically if logged in
+  const { data: userProfile } = useApiQuery<UserType>(
+    ['userProfile'],
+    '/users/me',
+    undefined,
+    { enabled: isUserLoggedIn }
+  )
 
   const handleLogout = () => {
     logout()
@@ -275,14 +285,18 @@ export function Navbar() {
               <>
                 <Button
                   variant="ghost"
-                  size="icon"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className={cn(
-                    "rounded-full transition-all hover:bg-primary/10 hover:text-primary",
+                    "flex items-center gap-2 rounded-full transition-all hover:bg-primary/10 pl-2 pr-4 py-2 hover:text-primary",
                     isDropdownOpen && "bg-primary/10 text-primary"
                   )}
                 >
-                  <User className="h-5 w-5" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary font-bold">
+                    {userProfile?.username ? userProfile.username.charAt(0).toUpperCase() : <User className="h-4 w-4" />}
+                  </div>
+                  <span className="hidden sm:inline font-medium text-sm">
+                    {userProfile?.username?.split(" ")[0] || "Profile"}
+                  </span>
                 </Button>
                 
                 <AnimatePresence>
@@ -292,11 +306,22 @@ export function Navbar() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute right-0 top-12 w-56 rounded-2xl border bg-card p-2 shadow-2xl"
+                      className="absolute right-0 top-12 w-64 rounded-2xl border bg-card p-2 shadow-2xl"
                     >
-                      <div className="mb-2 px-3 py-2 border-b">
-                        <p className="text-sm font-medium">My Account</p>
+                      <div className="mb-2 px-3 py-3 border-b border-border flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary text-lg font-bold">
+                          {userProfile?.username ? userProfile.username.charAt(0).toUpperCase() : "..."}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <p className="text-sm font-bold leading-none mb-1.5 truncate">
+                            {userProfile?.username || "Loading..."}
+                          </p>
+                          <p className="text-xs text-muted-foreground leading-none truncate">
+                            {userProfile?.email || "..."}
+                          </p>
+                        </div>
                       </div>
+
                       <div className="flex flex-col space-y-1">
                         <Link href="/account/profile" onClick={() => setIsDropdownOpen(false)}>
                           <div className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary text-muted-foreground cursor-pointer">

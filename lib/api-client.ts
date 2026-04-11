@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuthStore } from "@/store/use-auth-store";
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -10,11 +11,11 @@ const apiClient = axios.create({
 // Add a request interceptor to include the auth token if available
 apiClient.interceptors.request.use(
   (config) => {
-    // You can get the token from localStorage or a store here
-    // const token = localStorage.getItem("token");
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    // Get the token directly from the Zustand store's state
+    const { token } = useAuthStore.getState();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {
