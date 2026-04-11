@@ -21,18 +21,26 @@ export function useApiQuery<T>(
 }
 
 /**
- * Generic POST/PUT/DELETE mutation hook
+ * Generic POST/PUT/PATCH/DELETE mutation hook
  */
 export function useApiMutation<TData, TVariables>(
-  method: "post" | "put" | "patch" | "delete",
-  url: string,
+  mutationFnOrMethod: ((variables: TVariables) => Promise<TData>) | "post" | "put" | "patch" | "delete",
+  urlOrOptions?: string | UseMutationOptions<TData, Error, TVariables>,
   options?: UseMutationOptions<TData, Error, TVariables>
 ) {
+  // Overload handling
+  const isFunction = typeof mutationFnOrMethod === "function";
+  const url = isFunction ? undefined : (urlOrOptions as string);
+  const mutationOptions = isFunction ? (urlOrOptions as UseMutationOptions<TData, Error, TVariables>) : options;
+
   return useMutation<TData, Error, TVariables>({
     mutationFn: async (variables) => {
-      const { data } = await apiClient[method]<TData>(url, variables);
+      if (isFunction) {
+        return mutationFnOrMethod(variables);
+      }
+      const { data } = await apiClient[mutationFnOrMethod]<TData>(url!, variables);
       return data;
     },
-    ...options,
+    ...mutationOptions,
   });
 }
