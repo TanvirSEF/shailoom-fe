@@ -21,8 +21,18 @@ import { AuthResponse } from "@/types/auth"
 
 export default function LoginPage() {
   const router = useRouter()
-  const setAuth = useAuthStore((state) => state.setAuth)
+  const { setAuth, isAuthenticated, role, _hasHydrated } = useAuthStore()
   const [showPassword, setShowPassword] = React.useState(false)
+
+  React.useEffect(() => {
+    if (_hasHydrated && isAuthenticated) {
+      if (role === "admin") {
+        router.push("/admin")
+      } else {
+        router.push("/")
+      }
+    }
+  }, [isAuthenticated, role, _hasHydrated, router])
 
   const {
     register,
@@ -41,8 +51,13 @@ export default function LoginPage() {
     {
       onSuccess: (data) => {
         setAuth(data.access_token, data.role)
-        toast.success("Welcome back!")
-        router.push("/")
+        toast.success(`Welcome back! Logged in as ${data.role}`)
+        
+        if (data.role === "admin") {
+          router.push("/admin")
+        } else {
+          router.push("/")
+        }
       },
       onError: (error: any) => {
         const message =

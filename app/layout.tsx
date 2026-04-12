@@ -19,6 +19,8 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
+import { LayoutWrapper } from "@/components/providers/layout-wrapper"
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -41,9 +43,7 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <QueryProvider>
-            <Navbar />
-            <main className="flex-1">{children}</main>
-            <Footer />
+            <LayoutWrapper>{children}</LayoutWrapper>
             <Toaster richColors position="bottom-right" closeButton />
             <AnimationPortal />
           </QueryProvider>
