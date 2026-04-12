@@ -34,7 +34,7 @@
   --sidebar-primary: hsl(17 65% 50%);
   --sidebar-primary-foreground: hsl(43 16% 95%);
   --sidebar-accent: hsl(17 65% 50%);
-  --sidebar-accent-foreground: hsl(309 37% 15%);
+  --sidebar-accent-foreground: hsl(0 0% 100%);
   --sidebar-border: hsl(309 20% 80%);
   --sidebar-ring: hsl(17 65% 50%);
 }

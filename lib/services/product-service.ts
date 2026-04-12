@@ -2,7 +2,10 @@ import apiClient from "../api-client";
 
 export const productService = {
   getProducts: (params?: any) => apiClient.get("/products", { params }),
-  createProduct: (data: any) => apiClient.post("/products", data),
+  createProduct: (formData: FormData) =>
+    apiClient.post("/products", formData, {
+      headers: { "Content-Type": undefined },
+    }),
   getSuggestions: (query: string) => 
     apiClient.get("/products/search/suggestions", { params: { query } }),
   deleteProduct: (productId: string | number) => 

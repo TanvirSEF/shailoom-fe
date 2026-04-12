@@ -25,26 +25,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 
-const chartData = [
-  { date: "2024-04-01", desktop: 222, mobile: 150 },
-  { date: "2024-04-02", desktop: 97, mobile: 180 },
-  { date: "2024-04-03", desktop: 167, mobile: 120 },
-  { date: "2024-04-04", desktop: 242, mobile: 260 },
-  { date: "2024-04-05", desktop: 373, mobile: 290 },
-  { date: "2024-04-06", desktop: 301, mobile: 340 },
-  { date: "2024-04-07", desktop: 245, mobile: 180 },
-  { date: "2024-04-08", desktop: 409, mobile: 320 },
-  { date: "2024-04-09", desktop: 59, mobile: 110 },
-  { date: "2024-04-10", desktop: 261, mobile: 190 },
-  { date: "2024-04-11", desktop: 327, mobile: 350 },
-  { date: "2024-04-12", desktop: 292, mobile: 210 },
-  { date: "2024-04-13", desktop: 342, mobile: 380 },
-  { date: "2024-04-14", desktop: 485, mobile: 420 },
-  { date: "2024-04-15", desktop: 540, mobile: 460 },
-]
+interface RevenueDataPoint {
+  date: string
+  revenue?: number
+  orders?: number
+  desktop?: number
+  mobile?: number
+  amount?: number
+}
 
-const chartConfig = {
+interface ChartProps {
+  data?: RevenueDataPoint[]
+  isLoading?: boolean
+  title?: string
+  description?: string
+  dataKey?: string
+  secondaryDataKey?: string
+}
+
+const defaultChartConfig: ChartConfig = {
+  revenue: {
+    label: "Revenue",
+    color: "hsl(var(--primary))",
+  },
+  orders: {
+    label: "Orders",
+    color: "hsl(var(--muted-foreground))",
+  },
   desktop: {
     label: "Desktop",
     color: "hsl(var(--primary))",
@@ -53,12 +62,45 @@ const chartConfig = {
     label: "Mobile",
     color: "hsl(var(--muted-foreground))",
   },
-} satisfies ChartConfig
+  amount: {
+    label: "Amount",
+    color: "hsl(var(--primary))",
+  },
+}
 
-export function ChartAreaInteractive() {
+function ChartSkeleton() {
+  return (
+    <Card className="rounded-3xl border-none bg-card/60 shadow-2xl shadow-indigo-500/5 backdrop-blur-xl">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
+        <div className="space-y-1.5">
+          <Skeleton className="h-5 w-48" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+      </CardHeader>
+      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+        <Skeleton className="aspect-auto h-[350px] w-full rounded-2xl" />
+      </CardContent>
+      <CardFooter className="flex-col items-start gap-3 border-t bg-muted/5 px-6 py-6 md:px-8">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-3 w-80" />
+      </CardFooter>
+    </Card>
+  )
+}
+
+export function ChartAreaInteractive({
+  data = [],
+  isLoading = false,
+  title = "Revenue Overview",
+  description = "Revenue trends over time",
+  dataKey = "revenue",
+  secondaryDataKey,
+}: ChartProps) {
   const [timeRange, setTimeRange] = React.useState("90d")
 
-  const filteredData = chartData.filter((item) => {
+  if (isLoading) return <ChartSkeleton />
+
+  const filteredData = data.filter((item) => {
     const date = new Date(item.date)
     const now = new Date()
     let daysToSubtract = 90
@@ -71,13 +113,15 @@ export function ChartAreaInteractive() {
     return date >= now
   })
 
+  const primaryLabel = String(defaultChartConfig[dataKey as keyof typeof defaultChartConfig]?.label ?? dataKey)
+
   return (
     <Card className="rounded-3xl border-none bg-card/60 shadow-2xl shadow-indigo-500/5 backdrop-blur-xl transition-all hover:bg-card/80">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
         <div className="space-y-1.5">
-          <CardTitle className="text-xl font-bold tracking-tight">Interactive Performance</CardTitle>
+          <CardTitle className="text-xl font-bold tracking-tight">{title}</CardTitle>
           <CardDescription className="text-sm font-medium opacity-60">
-            Real-time traffic across all platforms
+            {description}
           </CardDescription>
         </div>
         <Select value={timeRange} onValueChange={setTimeRange}>
@@ -96,35 +140,37 @@ export function ChartAreaInteractive() {
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer
-          config={chartConfig}
+          config={defaultChartConfig}
           className="aspect-auto h-[350px] w-full"
         >
           <AreaChart data={filteredData}>
             <defs>
-              <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="fillPrimary" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor="var(--color-desktop)"
+                  stopColor={`var(--color-${dataKey})`}
                   stopOpacity={0.4}
                 />
                 <stop
                   offset="95%"
-                  stopColor="var(--color-desktop)"
+                  stopColor={`var(--color-${dataKey})`}
                   stopOpacity={0.1}
                 />
               </linearGradient>
-              <linearGradient id="fillMobile" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-mobile)"
-                  stopOpacity={0.2}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-mobile)"
-                  stopOpacity={0.05}
-                />
-              </linearGradient>
+              {secondaryDataKey && (
+                <linearGradient id="fillSecondary" x1="0" y1="0" x2="0" y2="1">
+                  <stop
+                    offset="5%"
+                    stopColor={`var(--color-${secondaryDataKey})`}
+                    stopOpacity={0.2}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor={`var(--color-${secondaryDataKey})`}
+                    stopOpacity={0.05}
+                  />
+                </linearGradient>
+              )}
             </defs>
             <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.3} />
             <XAxis
@@ -156,24 +202,26 @@ export function ChartAreaInteractive() {
                 />
               }
             />
+            {secondaryDataKey && (
+              <Area
+                dataKey={secondaryDataKey}
+                type="natural"
+                fill="url(#fillSecondary)"
+                stroke={`var(--color-${secondaryDataKey})`}
+                stackId="a"
+                strokeWidth={2}
+              />
+            )}
             <Area
-              dataKey="mobile"
+              dataKey={dataKey}
               type="natural"
-              fill="url(#fillMobile)"
-              stroke="var(--color-mobile)"
-              stackId="a"
-              strokeWidth={2}
-            />
-            <Area
-              dataKey="desktop"
-              type="natural"
-              fill="url(#fillDesktop)"
-              stroke="var(--color-desktop)"
+              fill="url(#fillPrimary)"
+              stroke={`var(--color-${dataKey})`}
               stackId="a"
               strokeWidth={3}
               activeDot={{
                 r: 6,
-                fill: "var(--color-desktop)",
+                fill: `var(--color-${dataKey})`,
                 stroke: "white",
                 strokeWidth: 2,
               }}
@@ -184,15 +232,15 @@ export function ChartAreaInteractive() {
       <CardFooter className="flex-col items-start gap-3 border-t bg-muted/5 px-6 py-6 md:px-8">
         <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-primary">
-            <IconTrendingUp className="size-5" /> 
-            Growth rate up 5.2%
+            <IconTrendingUp className="size-5" />
+            {primaryLabel} trends
           </div>
           <div className="text-xs font-bold text-muted-foreground opacity-60">
             Updated just now
           </div>
         </div>
         <div className="text-xs font-medium leading-relaxed text-muted-foreground/80">
-          Showing platform-wide trends based on the selected time range. Mobile adoption consistently outpaces projections.
+          Showing {primaryLabel.toLowerCase()} data based on the selected time range.
         </div>
       </CardFooter>
     </Card>
