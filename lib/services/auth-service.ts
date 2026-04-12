@@ -1,4 +1,4 @@
-import { SignupValues, LoginValues } from "../validations/auth.schema";
+import { SignupValues, LoginValues, ForgotPasswordValues, ResetPasswordValues } from "../validations/auth.schema";
 import apiClient from "../api-client";
 import { AuthResponse } from "@/types/auth";
 
@@ -23,11 +23,11 @@ export const authService = {
     const response = await apiClient.post<AuthResponse>("/auth/refresh");
     return response.data;
   },
-  forgotPassword: async (email: string) => {
-    const response = await apiClient.post<{ message: string }>("/auth/forgot-password", { email });
+  forgotPassword: async (data: ForgotPasswordValues) => {
+    const response = await apiClient.post<{ message: string }>("/auth/forgot-password", data);
     return response.data;
   },
-  resetPassword: async (data: any) => {
+  resetPassword: async (data: Omit<ResetPasswordValues, "confirm_password">) => {
     const response = await apiClient.post<{ message: string }>("/auth/reset-password", data);
     return response.data;
   },

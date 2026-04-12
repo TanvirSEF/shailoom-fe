@@ -117,7 +117,7 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password" className={cn(errors.password && "text-destructive")}>Password</Label>
-                    <Link href="#" className="text-xs font-bold text-primary hover:underline">Forgot password?</Link>
+                    <Link href="/forgot-password" className="text-xs font-bold text-primary hover:underline">Forgot password?</Link>
                   </div>
                   <div className="relative group">
                     <Lock className={cn(
