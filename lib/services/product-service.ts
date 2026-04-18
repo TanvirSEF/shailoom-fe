@@ -6,8 +6,8 @@ export const productService = {
     apiClient.post("/products", formData, {
       headers: { "Content-Type": undefined },
     }),
-  getSuggestions: (query: string) => 
-    apiClient.get("/products/search/suggestions", { params: { query } }),
+  getSuggestions: (query: string) =>
+    apiClient.get("/products/search/suggestions", { params: { q: query } }),
   deleteProduct: (productId: string | number) => 
     apiClient.delete(`/products/${productId}`),
   getReviews: (productId: string | number) => 

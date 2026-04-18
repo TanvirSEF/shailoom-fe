@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { Search, Heart, ShoppingBag, User, Menu, LogOut, Package, ShieldCheck, LayoutDashboard } from "lucide-react"
 import * as React from "react"
 import { useCartStore } from "@/store/use-cart-store"
@@ -20,7 +21,9 @@ import {
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { useApiQuery } from "@/hooks/use-api"
+import { useWishlistStore } from "@/store/use-wishlist-store"
 import { User as UserType } from "@/types/auth"
+import { productService } from "@/lib/services/product-service"
 
 export function Navbar() {
   const router = useRouter()
@@ -35,7 +38,12 @@ export function Navbar() {
   const [mounted, setMounted] = React.useState(false)
   const [isAnimating, setIsAnimating] = React.useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false)
-  
+  const [searchQuery, setSearchQuery] = React.useState("")
+  const [searchResults, setSearchResults] = React.useState<any[]>([])
+  const [showSearch, setShowSearch] = React.useState(false)
+  const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
+  const searchRef = React.useRef<HTMLDivElement>(null)
+
   // Close dropdown on outside click
   const dropdownRef = React.useRef<HTMLDivElement>(null)
   
@@ -43,6 +51,9 @@ export function Navbar() {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false)
+      }
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearch(false)
       }
     }
     document.addEventListener("mousedown", handleClickOutside)
@@ -54,6 +65,35 @@ export function Navbar() {
   }, [])
 
   React.useEffect(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+
+    if (!searchQuery.trim()) {
+      setSearchResults([])
+      return
+    }
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const res = await productService.getSuggestions(searchQuery.trim())
+        setSearchResults(res.data?.suggestions || res.data || [])
+      } catch {
+        setSearchResults([])
+      }
+    }, 300)
+
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+    }
+  }, [searchQuery])
+
+  const handleSearchSelect = (item: any) => {
+    setShowSearch(false)
+    setSearchQuery("")
+    setSearchResults([])
+    router.push(`/product/${item.id || item.product_id}`)
+  }
+
+  React.useEffect(() => {
     if (itemCount > 0) {
       setIsAnimating(true)
       const timer = setTimeout(() => setIsAnimating(false), 300)
@@ -63,6 +103,11 @@ export function Navbar() {
 
   const displayCount = mounted ? itemCount : 0
   const isUserLoggedIn = mounted ? isAuthenticated : false
+  const wishlistCount = useWishlistStore((state) => state.items.length)
+
+  React.useEffect(() => {
+    if (isUserLoggedIn) useWishlistStore.getState().fetchWishlist()
+  }, [isUserLoggedIn])
 
   // Fetch the user profile dynamically if logged in
   const { data: userProfile } = useApiQuery<UserType>(
@@ -101,13 +146,41 @@ export function Navbar() {
 
               <div className="flex flex-col gap-6 py-6">
                 {/* Mobile Search Bar */}
-                <div className="relative w-full">
+                <div className="relative w-full" ref={searchRef}>
                   <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="search"
                     placeholder="Search Shailoom..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value)
+                      setShowSearch(true)
+                    }}
                     className="h-9 w-full rounded-full bg-muted/50 pl-8 text-sm transition-all focus-visible:ring-primary"
                   />
+                  {showSearch && searchResults.length > 0 && (
+                    <div className="absolute top-11 left-0 z-50 w-full rounded-xl border bg-card p-2 shadow-xl">
+                      {searchResults.map((item: any, i: number) => (
+                        <button
+                          key={item.id || item.product_id || i}
+                          onClick={() => handleSearchSelect(item)}
+                          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-primary/10"
+                        >
+                          {item.image && (
+                            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
+                              <Image src={item.image} alt={item.name} fill className="object-cover" />
+                            </div>
+                          )}
+                          <div className="flex flex-col items-start overflow-hidden">
+                            <span className="truncate font-medium">{item.name}</span>
+                            {item.price && (
+                              <span className="text-xs text-muted-foreground">৳{Number(item.price).toLocaleString()}</span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <nav className="mt-8 flex flex-col gap-4">
@@ -252,23 +325,67 @@ export function Navbar() {
         {/* Right: Actions */}
         <div className="flex items-center gap-1 sm:gap-2">
           {/* Small Search Bar */}
-          <div className="relative hidden md:block">
+          <div className="relative hidden md:block" ref={searchRef}>
             <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                setShowSearch(true)
+              }}
+              onFocus={() => searchQuery.trim() && setShowSearch(true)}
               className="h-9 w-32 rounded-full bg-muted/50 pl-8 text-sm transition-all focus-visible:ring-primary lg:w-48"
             />
+            <AnimatePresence>
+              {showSearch && searchResults.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-11 left-0 z-50 w-72 rounded-xl border bg-card p-2 shadow-xl"
+                >
+                  {searchResults.map((item: any, i: number) => (
+                    <button
+                      key={item.id || item.product_id || i}
+                      onClick={() => handleSearchSelect(item)}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-primary/10"
+                    >
+                      {item.image && (
+                        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
+                          <Image src={item.image} alt={item.name} fill className="object-cover" />
+                        </div>
+                      )}
+                      <div className="flex flex-col items-start overflow-hidden">
+                        <span className="truncate font-medium">{item.name}</span>
+                        {item.price && (
+                          <span className="text-xs text-muted-foreground">৳{Number(item.price).toLocaleString()}</span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full transition-transform hover:scale-105 hover:text-primary"
-          >
-            <Heart className="h-5 w-5" />
-            <span className="sr-only">Wishlist</span>
-          </Button>
+          <Link href="/account/wishlist">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative rounded-full transition-transform hover:scale-105 hover:text-primary"
+            >
+              <Heart className="h-5 w-5" />
+              {mounted && wishlistCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-lg">
+                  {wishlistCount}
+                </span>
+              )}
+              <span className="sr-only">Wishlist</span>
+            </Button>
+          </Link>
 
           <Link href="/cart">
             <Button

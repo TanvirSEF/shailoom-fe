@@ -3,89 +3,185 @@
 import * as React from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { 
-  ShoppingBag, 
-  Heart, 
-  Share2, 
-  ChevronRight, 
-  Star, 
-  ShieldCheck, 
-  Truck, 
-  RotateCcw,
-  Phone 
-} from "lucide-react"
-
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
+  ShoppingBag,
+  Heart,
+  ChevronRight,
+  Star,
+  ShieldCheck,
+  Truck,
+  Phone,
+  Loader2,
+  Send,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Textarea } from "@/components/ui/textarea"
 import { ServiceFeatures } from "@/components/service-features"
 import { useCartStore } from "@/store/use-cart-store"
+import { useWishlistStore } from "@/store/use-wishlist-store"
+import { useAuthStore } from "@/store/use-auth-store"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { useApiQuery, useApiMutation } from "@/hooks/use-api"
+import { productService } from "@/lib/services/product-service"
 
-const PRODUCT_DATA = {
-  id: 1,
-  name: "Classic Tangail Handloom Tat Saree",
-  price: 3500,
-  originalPrice: 4200,
-  description: "Experience the timeless beauty of our Classic Tangail Handloom Tat Saree. Traditionally hand-woven by master weavers of Tangail, this saree features intricate 'Tat' patterns and a wide, contrast border that defines its unique character. Made from 100% premium organic cotton, it's breathable, lightweight, and perfect for any occasion.",
-  fabric: "100% Organic Handloom Cotton",
-  length: "6.5 Meters (with unstitched blouse piece)",
-  washCare: "Hand wash with mild detergent or Dry clean for longevity.",
-  images: [
-    "/images/products/sarees/tangail-1.png",
-    "/images/products/sarees/tangail-detail-1.png",
-    "/images/products/sarees/tangail-detail-2.png",
-    "/images/products/sarees/tangail-detail-3.png",
-  ],
-  rating: 4.8,
-  reviews: 124,
+interface Product {
+  id: number
+  name: string
+  price: number
+  original_price?: number
+  description?: string
+  fabric?: string
+  length?: string
+  wash_care?: string
+  images?: string[]
+  image?: string
+  rating?: number
+  review_count?: number
+  category?: string
+  stock?: number
 }
 
-const RELATED_PRODUCTS = [
-  { id: 2, name: "Emerald Half-Silk", price: 5800, image: "/images/products/sarees/tangail-2.png" },
-  { id: 3, name: "Lavender Tant", price: 2800, image: "/images/products/sarees/tangail-3.png" },
-  { id: 4, name: "Royal Blue Zari", price: 12500, image: "/images/products/sarees/tangail-4.png" },
-]
+interface Review {
+  id: number
+  user: { username: string }
+  rating: number
+  comment: string
+  created_at: string
+}
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = React.use(params)
+  const productId = resolvedParams.id
   const router = useRouter()
   const addItem = useCartStore((state) => state.addItem)
   const triggerFly = useCartStore((state) => state.triggerFly)
-  const [activeImage, setActiveImage] = React.useState(PRODUCT_DATA.images[0])
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const [activeImage, setActiveImage] = React.useState(0)
+  const [reviewRating, setReviewRating] = React.useState(5)
+  const [reviewComment, setReviewComment] = React.useState("")
+  const [wishlistLoading, setWishlistLoading] = React.useState(false)
   const imageRef = React.useRef<HTMLDivElement>(null)
+  const { items: wishlistItems, fetchWishlist, addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore()
+
+  React.useEffect(() => {
+    if (isAuthenticated) fetchWishlist()
+  }, [isAuthenticated])
+
+  const handleToggleWishlist = async () => {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to add to wishlist.")
+      router.push("/login")
+      return
+    }
+    setWishlistLoading(true)
+    try {
+      if (isInWishlist(productId)) {
+        await removeFromWishlist(productId)
+        toast.success("Removed from wishlist")
+      } else {
+        await addToWishlist(productId)
+        toast.success("Added to wishlist")
+      }
+    } catch {
+      toast.error("Failed to update wishlist")
+    } finally {
+      setWishlistLoading(false)
+    }
+  }
+
+  // Fetch product data
+  const { data: product, isLoading, error } = useApiQuery<Product>(
+    ["product", productId],
+    `/products/${productId}`
+  )
+
+  // Fetch reviews
+  const { data: reviewsData, refetch: refetchReviews } = useApiQuery<{ reviews: Review[]; average_rating?: number; total_reviews?: number }>(
+    ["productReviews", productId],
+    `/products/${productId}/reviews`
+  )
+
+  // Submit review mutation
+  const { mutate: submitReview, isPending: isSubmittingReview } = useApiMutation<
+    { message: string },
+    { rating: number; comment: string }
+  >(
+    async (data) => {
+      const res = await productService.submitReview(productId, data)
+      return res.data
+    },
+    {
+      onSuccess: () => {
+        toast.success("Review submitted successfully!")
+        setReviewComment("")
+        setReviewRating(5)
+        refetchReviews()
+      },
+      onError: (error: any) => {
+        const message = error.response?.data?.detail || "Failed to submit review."
+        toast.error(message)
+      },
+    }
+  )
+
+  const images = product?.images || (product?.image ? [product.image] : [])
+  const reviews = reviewsData?.reviews || []
+  const avgRating = reviewsData?.average_rating || product?.rating || 0
+  const totalReviews = reviewsData?.total_reviews || product?.review_count || reviews.length
 
   const handleAddToCart = () => {
+    if (!product) return
     addItem({
-      id: PRODUCT_DATA.id,
-      name: PRODUCT_DATA.name,
-      price: PRODUCT_DATA.price,
-      image: PRODUCT_DATA.images[0],
-      fabric: PRODUCT_DATA.fabric,
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: images[0] || "/images/products/placeholder.png",
+      fabric: product.fabric,
       quantity: 1,
     })
-    
-    // Trigger animation
+
     if (imageRef.current) {
-      triggerFly(PRODUCT_DATA.images[0], imageRef.current)
+      triggerFly(images[0] || "", imageRef.current)
     }
 
     toast.success("Added to cart", {
-      description: `${PRODUCT_DATA.name} has been added to your shopping bag.`,
+      description: `${product.name} has been added to your shopping bag.`,
     })
   }
 
   const handleBuyNow = () => {
     handleAddToCart()
     router.push("/cart")
+  }
+
+  const handleSubmitReview = () => {
+    if (!reviewComment.trim()) {
+      toast.error("Please write a comment before submitting.")
+      return
+    }
+    submitReview({ rating: reviewRating, comment: reviewComment.trim() })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (error || !product) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+        <p className="text-lg font-medium text-muted-foreground">Product not found</p>
+        <Link href="/shop/sarees">
+          <Button variant="outline">Browse Sarees</Button>
+        </Link>
+      </div>
+    )
   }
 
   return (
@@ -97,169 +193,300 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           <ChevronRight className="h-3 w-3" />
           <li><Link href="/shop/sarees" className="hover:text-primary">Sarees</Link></li>
           <ChevronRight className="h-3 w-3" />
-          <li className="text-foreground font-bold">Tangail Saree</li>
+          <li className="text-foreground font-bold">{product.name}</li>
         </ol>
       </nav>
 
       <main className="container mx-auto px-4 py-8 md:px-6">
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
-          
+
           {/* Left: Image Gallery */}
           <div className="space-y-4">
             <div ref={imageRef} className="relative aspect-[3/4] overflow-hidden rounded-3xl bg-muted shadow-lg">
-              <Image
-                src={activeImage}
-                alt={PRODUCT_DATA.name}
-                fill
-                className="object-cover transition-all duration-500"
-                priority
-              />
+              {images[activeImage] ? (
+                <Image
+                  src={images[activeImage]}
+                  alt={product.name}
+                  fill
+                  className="object-cover transition-all duration-500"
+                  priority
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-muted-foreground">
+                  No image available
+                </div>
+              )}
               <div className="absolute top-4 right-4">
-                <Button size="icon" variant="ghost" className="rounded-full bg-white/50 backdrop-blur-md hover:bg-white">
-                  <Heart className="h-5 w-5" />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleToggleWishlist}
+                  disabled={wishlistLoading}
+                  className={cn(
+                    "rounded-full backdrop-blur-md transition-all",
+                    isInWishlist(productId)
+                      ? "bg-red-50 hover:bg-red-100"
+                      : "bg-white/50 hover:bg-white"
+                  )}
+                >
+                  <Heart className={cn(
+                    "h-5 w-5 transition-colors",
+                    isInWishlist(productId)
+                      ? "fill-red-500 text-red-500"
+                      : "text-foreground"
+                  )} />
                 </Button>
               </div>
             </div>
-            
+
             {/* Thumbnails */}
-            <div className="grid grid-cols-4 gap-4">
-              {PRODUCT_DATA.images.map((img, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveImage(img)}
-                  className={`relative aspect-square overflow-hidden rounded-xl border-2 transition-all ${
-                    activeImage === img ? 'border-primary ring-2 ring-primary/20' : 'border-transparent opacity-70 hover:opacity-100'
-                  }`}
-                >
-                  <Image src={img} alt={`Detail ${i}`} fill className="object-cover" />
-                </button>
-              ))}
-            </div>
+            {images.length > 1 && (
+              <div className="grid grid-cols-4 gap-4">
+                {images.map((img, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveImage(i)}
+                    className={cn(
+                      "relative aspect-square overflow-hidden rounded-xl border-2 transition-all",
+                      activeImage === i ? 'border-primary ring-2 ring-primary/20' : 'border-transparent opacity-70 hover:opacity-100'
+                    )}
+                  >
+                    <Image src={img} alt={`Detail ${i}`} fill className="object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Right: Product Info */}
           <div className="flex flex-col space-y-8">
             <div className="space-y-4">
-              <Badge className="bg-primary/10 text-primary font-bold uppercase tracking-widest text-[10px] px-3 py-1">
-                Tangail Handloom
-              </Badge>
+              {product.category && (
+                <Badge className="bg-primary/10 text-primary font-bold uppercase tracking-widest text-[10px] px-3 py-1">
+                  {product.category}
+                </Badge>
+              )}
               <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">
-                {PRODUCT_DATA.name}
+                {product.name}
               </h1>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, i) => (
-                        <Star key={i} className={`h-4 w-4 ${i < 4 ? 'fill-primary text-primary' : 'text-muted-foreground opacity-30'}`} />
-                    ))}
-                    <span className="ml-2 text-sm font-bold">{PRODUCT_DATA.rating}</span>
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className={cn(
+                      "h-4 w-4",
+                      i < Math.round(avgRating) ? 'fill-primary text-primary' : 'text-muted-foreground opacity-30'
+                    )} />
+                  ))}
+                  <span className="ml-2 text-sm font-bold">{avgRating.toFixed(1)}</span>
                 </div>
                 <div className="h-4 w-[1px] bg-border" />
-                <span className="text-sm text-muted-foreground">{PRODUCT_DATA.reviews} Reviews</span>
+                <span className="text-sm text-muted-foreground">{totalReviews} Reviews</span>
               </div>
             </div>
 
             <div className="flex items-baseline gap-4">
-              <span className="text-4xl font-bold text-foreground">৳{PRODUCT_DATA.price.toLocaleString()}</span>
-              {PRODUCT_DATA.originalPrice && (
+              <span className="text-4xl font-bold text-foreground">৳{product.price.toLocaleString()}</span>
+              {product.original_price && (
                 <span className="text-xl text-muted-foreground line-through decoration-primary/30">
-                   ৳{PRODUCT_DATA.originalPrice.toLocaleString()}
+                  ৳{product.original_price.toLocaleString()}
                 </span>
               )}
             </div>
 
-            <p className="text-lg leading-relaxed text-muted-foreground">
-              {PRODUCT_DATA.description}
-            </p>
+            {product.description && (
+              <p className="text-lg leading-relaxed text-muted-foreground">
+                {product.description}
+              </p>
+            )}
 
             {/* Actions */}
             <div className="space-y-4 pt-4">
               <div className="hidden md:flex flex-col gap-4 sm:flex-row">
-                <Button 
+                <Button
                   onClick={handleAddToCart}
-                  size="lg" 
+                  size="lg"
                   className="h-14 flex-1 rounded-2xl text-base font-bold uppercase tracking-[0.2em] shadow-xl transition-all hover:scale-[1.02] active:scale-95"
                 >
-                   <ShoppingBag className="mr-2 h-5 w-5" /> Add to Cart
+                  <ShoppingBag className="mr-2 h-5 w-5" /> Add to Cart
                 </Button>
-                <Button 
+                <Button
                   onClick={handleBuyNow}
-                  size="lg" 
-                  variant="secondary" 
+                  size="lg"
+                  variant="secondary"
                   className="h-14 flex-1 rounded-2xl text-base font-bold uppercase tracking-[0.2em] border-2 border-primary/20 transition-all hover:scale-[1.02] active:scale-95"
                 >
-                   Buy Now
+                  Buy Now
                 </Button>
               </div>
               <Button size="lg" variant="outline" className="h-14 w-full rounded-2xl text-base font-bold uppercase tracking-[0.1em] border-emerald-500/20 text-emerald-600 hover:bg-emerald-50 transition-all hover:scale-[1.01]">
-                 <Phone className="mr-2 h-5 w-5" /> Order via WhatsApp
+                <Phone className="mr-2 h-5 w-5" /> Order via WhatsApp
               </Button>
             </div>
 
             {/* Specifications */}
-            <div className="grid grid-cols-1 gap-6 rounded-2xl bg-muted/30 p-8 border border-border/50">
-                <div className="flex justify-between border-b border-border pb-4">
+            {(product.fabric || product.length || product.wash_care) && (
+              <div className="grid grid-cols-1 gap-6 rounded-2xl bg-muted/30 p-8 border border-border/50">
+                {product.fabric && (
+                  <div className="flex justify-between border-b border-border pb-4">
                     <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Fabric</span>
-                    <span className="text-sm font-medium">{PRODUCT_DATA.fabric}</span>
-                </div>
-                <div className="flex justify-between border-b border-border pb-4">
+                    <span className="text-sm font-medium">{product.fabric}</span>
+                  </div>
+                )}
+                {product.length && (
+                  <div className="flex justify-between border-b border-border pb-4">
                     <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Length</span>
-                    <span className="text-sm font-medium">{PRODUCT_DATA.length}</span>
-                </div>
-                <div className="flex justify-between">
+                    <span className="text-sm font-medium">{product.length}</span>
+                  </div>
+                )}
+                {product.wash_care && (
+                  <div className="flex justify-between">
                     <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Wash Care</span>
-                    <span className="text-sm font-medium">{PRODUCT_DATA.washCare}</span>
-                </div>
-            </div>
+                    <span className="text-sm font-medium">{product.wash_care}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex items-center gap-6 pt-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                <div className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> 100% Authentic</div>
-                <div className="flex items-center gap-2"><Truck className="h-4 w-4 text-primary" /> Free Shipping</div>
+              <div className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> 100% Authentic</div>
+              <div className="flex items-center gap-2"><Truck className="h-4 w-4 text-primary" /> Free Shipping</div>
             </div>
           </div>
         </div>
       </main>
 
-      {/* Service Features Reused */}
-      <ServiceFeatures />
+      {/* Reviews Section */}
+      <section className="container mx-auto px-4 py-16 md:px-6">
+        <div className="space-y-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-3xl font-bold tracking-tight">
+              Customer <span className="italic font-serif text-primary">Reviews</span>
+            </h2>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className={cn(
+                    "h-5 w-5",
+                    i < Math.round(avgRating) ? 'fill-primary text-primary' : 'text-muted-foreground opacity-30'
+                  )} />
+                ))}
+              </div>
+              <span className="text-sm font-bold">{avgRating.toFixed(1)} out of 5</span>
+              <span className="text-sm text-muted-foreground">({totalReviews} reviews)</span>
+            </div>
+          </div>
 
-      {/* Related Products */}
-      <section className="container mx-auto px-4 py-24 md:px-6 pb-32 md:pb-24">
-        <div className="mb-12 flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight">You May Also <span className="italic font-serif text-primary">Like</span></h2>
-          <Link href="/shop/sarees" className="text-sm font-bold uppercase tracking-[0.2em] text-primary hover:underline">
-            View All
-          </Link>
-        </div>
-        
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {RELATED_PRODUCTS.map((item) => (
-            <Link key={item.id} href={`/product/${item.id}`} className="group space-y-4">
-              <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-muted transition-transform duration-500 group-hover:scale-[1.02]">
-                <Image src={item.image} alt={item.name} fill className="object-cover" />
+          {/* Write a Review */}
+          {isAuthenticated && (
+            <div className="rounded-2xl border bg-card p-6 space-y-4">
+              <h3 className="text-lg font-bold">Write a Review</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">Rating:</span>
+                <div className="flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setReviewRating(i + 1)}
+                      className="transition-transform hover:scale-110"
+                    >
+                      <Star className={cn(
+                        "h-6 w-6",
+                        i < reviewRating ? 'fill-primary text-primary' : 'text-muted-foreground opacity-30'
+                      )} />
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="text-center">
-                <h3 className="font-bold group-hover:text-primary transition-colors">{item.name}</h3>
-                <p className="text-lg font-medium text-muted-foreground mt-1">৳{item.price.toLocaleString()}</p>
-              </div>
-            </Link>
-          ))}
+              <Textarea
+                placeholder="Share your experience with this product..."
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                className="min-h-[100px] rounded-xl"
+              />
+              <Button
+                onClick={handleSubmitReview}
+                disabled={isSubmittingReview}
+                className="rounded-xl px-6"
+              >
+                {isSubmittingReview ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="mr-2 h-4 w-4" />
+                )}
+                Submit Review
+              </Button>
+            </div>
+          )}
+
+          {!isAuthenticated && (
+            <div className="rounded-2xl border bg-muted/30 p-6 text-center">
+              <p className="text-muted-foreground">
+                <Link href="/login" className="font-bold text-primary hover:underline">Sign in</Link> to write a review.
+              </p>
+            </div>
+          )}
+
+          {/* Reviews List */}
+          {reviews.length > 0 ? (
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <div key={review.id} className="rounded-2xl border bg-card p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                          {review.user.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium">{review.user.username}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(review.created_at).toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-0.5">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className={cn(
+                          "h-3.5 w-3.5",
+                          i < review.rating ? 'fill-primary text-primary' : 'text-muted-foreground opacity-30'
+                        )} />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="mt-3 text-muted-foreground leading-relaxed">{review.comment}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border bg-muted/30 p-12 text-center">
+              <p className="text-muted-foreground">No reviews yet. Be the first to review this product!</p>
+            </div>
+          )}
         </div>
       </section>
 
+      <ServiceFeatures />
+
       {/* Sticky Mobile Buy Bar */}
       <div className="fixed bottom-0 left-0 z-50 flex w-full items-center gap-3 border-t bg-background/80 p-4 backdrop-blur-md md:hidden">
-        <Button 
+        <Button
           onClick={handleAddToCart}
-          variant="outline" 
+          variant="outline"
           className="h-12 w-1/2 rounded-xl font-bold uppercase tracking-widest border-primary/20"
         >
-           Add to Cart
+          Add to Cart
         </Button>
-        <Button 
+        <Button
           onClick={handleBuyNow}
           className="h-12 w-1/2 rounded-xl font-bold uppercase tracking-widest shadow-lg"
         >
-           Buy Now
+          Buy Now
         </Button>
       </div>
     </div>

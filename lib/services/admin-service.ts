@@ -1,5 +1,26 @@
 import apiClient from "../api-client";
 
+export interface Coupon {
+  _id: string;
+  code: string;
+  discount_type: "percentage" | "fixed";
+  discount_value: number;
+  start_date: string;
+  end_date: string;
+  usage_limit: number;
+  used_count: number;
+  is_active: boolean;
+}
+
+export interface CreateCouponData {
+  code: string;
+  discount_type: "percentage" | "fixed";
+  discount_value: number;
+  min_order_value?: number;
+  max_uses?: number;
+  end_date: string;
+}
+
 export const adminService = {
   // Orders
   getAllOrders: () => apiClient.get("/admin/orders"),
@@ -22,6 +43,6 @@ export const adminService = {
 
   // Coupons
   getAllCoupons: () => apiClient.get("/admin/coupons"),
-  createCoupon: (data: any) => apiClient.post("/admin/coupons", data),
+  createCoupon: (data: CreateCouponData) => apiClient.post("/admin/coupons", data),
   deactivateCoupon: (code: string) => apiClient.delete(`/admin/coupons/${code}`),
 };

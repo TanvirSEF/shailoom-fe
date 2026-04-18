@@ -50,7 +50,7 @@ export default function LoginPage() {
     authService.login,
     {
       onSuccess: (data) => {
-        setAuth(data.access_token, data.role)
+        setAuth(data.access_token, data.role, data.refresh_token)
         toast.success(`Welcome back! Logged in as ${data.role}`)
         
         if (data.role === "admin") {
