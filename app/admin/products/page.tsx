@@ -603,7 +603,9 @@ export default function ProductsPage() {
                     : "—"
 
                   const colorsDisplay = Array.isArray(product.colors)
-                    ? product.colors.join(", ")
+                    ? product.colors.map((c: Record<string, string> | string) =>
+                        typeof c === "object" && c !== null ? c.name ?? JSON.stringify(c) : c,
+                      ).join(", ")
                     : typeof product.colors === "string"
                     ? product.colors
                     : "—"
