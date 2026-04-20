@@ -5,11 +5,13 @@ export interface Coupon {
   code: string;
   discount_type: "percentage" | "fixed";
   discount_value: number;
+  min_order_value: number;
   start_date: string;
   end_date: string;
   usage_limit: number;
   used_count: number;
   is_active: boolean;
+  status: "active" | "inactive" | "expired" | "used_up" | "scheduled";
 }
 
 export interface CreateCouponData {
@@ -17,7 +19,7 @@ export interface CreateCouponData {
   discount_type: "percentage" | "fixed";
   discount_value: number;
   min_order_value?: number;
-  max_uses?: number;
+  usage_limit?: number;
   end_date: string;
 }
 
@@ -45,4 +47,6 @@ export const adminService = {
   getAllCoupons: () => apiClient.get("/admin/coupons"),
   createCoupon: (data: CreateCouponData) => apiClient.post("/admin/coupons", data),
   deactivateCoupon: (code: string) => apiClient.delete(`/admin/coupons/${code}`),
+  activateCoupon: (code: string) => apiClient.patch(`/admin/coupons/${code}/activate`),
+  deleteCoupon: (code: string) => apiClient.delete(`/admin/coupons/${code}/delete`),
 };

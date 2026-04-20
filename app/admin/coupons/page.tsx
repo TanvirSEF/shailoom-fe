@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -38,6 +39,7 @@ import { Loader2 } from "lucide-react"
 export default function CouponsPage() {
   const [search, setSearch] = React.useState("")
   const [dialogOpen, setDialogOpen] = React.useState(false)
+  const [deleteTarget, setDeleteTarget] = React.useState<Coupon | null>(null)
 
   // Form state
   const [formCode, setFormCode] = React.useState("")
@@ -80,6 +82,32 @@ export default function CouponsPage() {
     }
   )
 
+  const activateMutation = useApiMutation<{ message: string }, string>(
+    (code) => adminService.activateCoupon(code).then((res) => res.data),
+    {
+      onSuccess: (data) => {
+        toast.success(data.message || "Coupon reactivated")
+        refetch()
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.detail || "Failed to activate coupon")
+      },
+    }
+  )
+
+  const deleteMutation = useApiMutation<{ message: string }, string>(
+    (code) => adminService.deleteCoupon(code).then((res) => res.data),
+    {
+      onSuccess: (data) => {
+        toast.success(data.message || "Coupon deleted")
+        refetch()
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.detail || "Failed to delete coupon")
+      },
+    }
+  )
+
   const resetForm = () => {
     setFormCode("")
     setFormType("percentage")
@@ -99,7 +127,7 @@ export default function CouponsPage() {
       discount_type: formType,
       discount_value: Number(formValue),
       min_order_value: formMinOrder ? Number(formMinOrder) : undefined,
-      max_uses: formMaxUses ? Number(formMaxUses) : undefined,
+      usage_limit: formMaxUses ? Number(formMaxUses) : undefined,
       end_date: new Date(formEndDate).toISOString(),
     })
   }
@@ -268,32 +296,95 @@ export default function CouponsPage() {
                     variant="outline"
                     className={cn(
                       "text-[10px] font-bold uppercase",
-                      coupon.is_active
+                      coupon.status === "active"
                         ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                        : coupon.status === "scheduled"
+                        ? "bg-blue-100 text-blue-700 border-blue-200"
+                        : coupon.status === "expired"
+                        ? "bg-amber-100 text-amber-700 border-amber-200"
+                        : coupon.status === "used_up"
+                        ? "bg-orange-100 text-orange-700 border-orange-200"
                         : "bg-red-100 text-red-700 border-red-200"
                     )}
                   >
-                    {coupon.is_active ? "Active" : "Inactive"}
+                    {coupon.status === "active"
+                      ? "Active"
+                      : coupon.status === "scheduled"
+                      ? "Scheduled"
+                      : coupon.status === "expired"
+                      ? "Expired"
+                      : coupon.status === "used_up"
+                      ? "Used Up"
+                      : "Inactive"}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  {coupon.is_active && (
+                  <div className="flex items-center justify-end gap-1">
+                    {coupon.status === "active" ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        disabled={deactivateMutation.isPending}
+                        onClick={() => deactivateMutation.mutate(coupon.code)}
+                      >
+                        {deactivateMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Deactivate"}
+                      </Button>
+                    ) : coupon.status === "inactive" ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald/10"
+                        disabled={activateMutation.isPending}
+                        onClick={() => activateMutation.mutate(coupon.code)}
+                      >
+                        {activateMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Reactivate"}
+                      </Button>
+                    ) : null}
                     <Button
                       variant="ghost"
                       size="sm"
                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      disabled={deactivateMutation.isPending}
-                      onClick={() => deactivateMutation.mutate(coupon.code)}
+                      onClick={() => setDeleteTarget(coupon)}
                     >
-                      {deactivateMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Deactivate"}
+                      Delete
                     </Button>
-                  )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Coupon</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete coupon{" "}
+              <span className="font-bold font-mono uppercase">{deleteTarget?.code}</span>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                if (deleteTarget) {
+                  deleteMutation.mutate(deleteTarget.code, {
+                    onSuccess: () => setDeleteTarget(null),
+                  })
+                }
+              }}
+            >
+              {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

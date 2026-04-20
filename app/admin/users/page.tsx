@@ -33,7 +33,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface AdminUser {
-  id: string
+  id?: string
+  _id?: string
   username?: string
   email?: string
   phone_number?: string
@@ -160,8 +161,8 @@ export default function UsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pagedUsers.map((user) => (
-                  <TableRow key={user.id} className="hover:bg-muted/50 transition-colors">
+                {pagedUsers.map((user, index) => (
+                  <TableRow key={user.id ?? user._id ?? user.email ?? index} className="hover:bg-muted/50 transition-colors">
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm shrink-0">
