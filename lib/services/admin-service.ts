@@ -49,4 +49,14 @@ export const adminService = {
   deactivateCoupon: (code: string) => apiClient.delete(`/admin/coupons/${code}`),
   activateCoupon: (code: string) => apiClient.patch(`/admin/coupons/${code}/activate`),
   deleteCoupon: (code: string) => apiClient.delete(`/admin/coupons/${code}/delete`),
+
+  // Steadfast Courier
+  createConsignment: (trackingId: string) =>
+    apiClient.post(`/admin/steadfast/orders/${trackingId}/consignment`),
+  getDeliveryStatus: (trackingId: string) =>
+    apiClient.get(`/admin/steadfast/orders/${trackingId}/delivery-status`),
+  getConsignmentStatus: (consignmentId: string) =>
+    apiClient.get(`/admin/steadfast/consignment/${consignmentId}/status`),
+  getSteadfastBalance: () => apiClient.get("/admin/steadfast/balance"),
+  syncDeliveryStatuses: () => apiClient.post("/admin/steadfast/sync-statuses"),
 };

@@ -11,6 +11,7 @@ import {
   IconLogout,
   IconUsers,
   IconTicket,
+  IconTruck,
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -57,6 +58,11 @@ const data = {
       title: "Coupons",
       url: "/admin/coupons",
       icon: IconTicket,
+    },
+    {
+      title: "Shipping",
+      url: "/admin/shipping",
+      icon: IconTruck,
     },
   ],
 }

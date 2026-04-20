@@ -14,6 +14,8 @@ import {
   Loader2,
   XCircle,
   Clock,
+  Copy,
+  ExternalLink,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -29,6 +31,13 @@ interface OrderItem {
   size?: string
   color?: string
   image?: string
+}
+
+interface SteadfastInfo {
+  consignment_id: number
+  tracking_code: string
+  status: string
+  created_at: string
 }
 
 interface TrackingStep {
@@ -52,6 +61,7 @@ interface OrderDetail {
   coupon_code?: string
   discount_amount?: number
   tracking_history?: { status: string; timestamp: string; note?: string }[]
+  steadfast?: SteadfastInfo
 }
 
 const statusSteps: TrackingStep[] = [
@@ -69,6 +79,30 @@ const statusColor: Record<string, string> = {
   shipped: "bg-purple-100 text-purple-700 border-purple-200",
   delivered: "bg-emerald-100 text-emerald-700 border-emerald-200",
   cancelled: "bg-red-100 text-red-700 border-red-200",
+}
+
+const courierStatusLabels: Record<string, string> = {
+  in_review: "Under Review",
+  pending: "In Transit",
+  delivered: "Delivered",
+  partial_delivered: "Partially Delivered",
+  cancelled: "Cancelled",
+  hold: "On Hold",
+  delivered_approval_pending: "Delivered (Pending Approval)",
+  cancelled_approval_pending: "Cancelled (Pending Approval)",
+  unknown_approval_pending: "Pending Review",
+  unknown: "Unknown",
+}
+
+const courierStatusColors: Record<string, string> = {
+  in_review: "bg-slate-100 text-slate-700 border-slate-200",
+  pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  delivered: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  partial_delivered: "bg-blue-100 text-blue-700 border-blue-200",
+  cancelled: "bg-red-100 text-red-700 border-red-200",
+  hold: "bg-orange-100 text-orange-700 border-orange-200",
+  delivered_approval_pending: "bg-teal-100 text-teal-700 border-teal-200",
+  cancelled_approval_pending: "bg-rose-100 text-rose-700 border-rose-200",
 }
 
 function getStepIndex(status: string): number {
@@ -112,6 +146,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ tracking
 
   const currentStep = order ? getStepIndex(order.status) : 0
   const isCancelled = order?.status === "cancelled"
+  const hasCourier = !!order?.steadfast
+
+  const handleCopyTrackingCode = (code: string) => {
+    navigator.clipboard.writeText(code)
+    toast.success("Tracking code copied!")
+  }
 
   if (isLoading) {
     return (
@@ -218,6 +258,59 @@ export default function OrderDetailPage({ params }: { params: Promise<{ tracking
         <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-6 text-center">
           <XCircle className="mx-auto h-8 w-8 text-destructive" />
           <p className="mt-2 font-bold text-destructive">This order has been cancelled.</p>
+        </div>
+      )}
+
+      {/* Courier Tracking Info */}
+      {hasCourier && (
+        <div className="rounded-2xl border border-purple-200 dark:border-purple-800/30 bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/20 dark:to-background p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold flex items-center gap-2">
+              <Truck className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              Courier Tracking
+            </h2>
+            <Badge
+              variant="outline"
+              className={`text-[10px] font-bold uppercase ${courierStatusColors[order.steadfast!.status] || "bg-muted text-muted-foreground"}`}
+            >
+              {courierStatusLabels[order.steadfast!.status] || order.steadfast!.status}
+            </Badge>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="rounded-xl bg-white/60 dark:bg-background/60 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Courier</p>
+              <p className="text-sm font-semibold mt-0.5">Steadfast Express</p>
+            </div>
+            <div className="rounded-xl bg-white/60 dark:bg-background/60 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Tracking Code</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-sm font-mono font-semibold">{order.steadfast!.tracking_code}</p>
+                <button
+                  onClick={() => handleCopyTrackingCode(order.steadfast!.tracking_code)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white/60 dark:bg-background/60 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Consignment</p>
+              <p className="text-sm font-mono font-semibold mt-0.5">{order.steadfast!.consignment_id}</p>
+            </div>
+          </div>
+
+          <div className="mt-4 flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs rounded-lg"
+              onClick={() => window.open(`https://portal.packzy.com/track/${order.steadfast!.tracking_code}`, "_blank")}
+            >
+              <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+              Track on Steadfast
+            </Button>
+          </div>
         </div>
       )}
 
