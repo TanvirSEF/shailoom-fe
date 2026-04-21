@@ -319,7 +319,7 @@ export default function AnalyticsPage() {
                     </TableCell>
                     <TableCell className="text-sm">{log.user || "System"}</TableCell>
                     <TableCell className="hidden sm:table-cell text-sm text-muted-foreground max-w-[300px] truncate">
-                      {log.details || "—"}
+                      {log.details ? (typeof log.details === "string" ? log.details : JSON.stringify(log.details)) : "—"}
                     </TableCell>
                     <TableCell className="text-right text-xs text-muted-foreground">
                       {log.timestamp
