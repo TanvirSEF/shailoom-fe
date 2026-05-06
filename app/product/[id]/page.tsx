@@ -26,23 +26,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { useApiQuery, useApiMutation } from "@/hooks/use-api"
 import { productService } from "@/lib/services/product-service"
-
-interface Product {
-  id: number
-  name: string
-  price: number
-  original_price?: number
-  description?: string
-  fabric?: string
-  length?: string
-  wash_care?: string
-  images?: string[]
-  image?: string
-  rating?: number
-  review_count?: number
-  category?: string
-  stock?: number
-}
+import type { Product } from "@/types/product"
 
 interface Review {
   id: number

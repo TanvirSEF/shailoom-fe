@@ -20,6 +20,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useApiQuery, useApiMutation } from "@/hooks/use-api"
 import { productService } from "@/lib/services/product-service"
+import type { PaginatedProductsResponse } from "@/types/product"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -78,7 +79,9 @@ const addProductSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
   price: z.coerce.number().positive("Price must be positive"),
+  original_price: z.coerce.number().positive("Must be positive").optional(),
   category: z.string().min(1, "Category is required"),
+  fabric: z.string().optional(),
   stock: z.coerce.number().int().min(0, "Stock must be 0 or more"),
   sizes: z.string().min(1, 'Sizes required, e.g. S, M, L'),
   colors: z.string().min(1, 'Colors required, e.g. Red, Blue'),
@@ -150,6 +153,8 @@ function AddProductDialog({
     formData.append("price", String(values.price))
     formData.append("category", values.category)
     formData.append("stock", String(values.stock))
+    if (values.fabric) formData.append("fabric", values.fabric)
+    if (values.original_price) formData.append("original_price", String(values.original_price))
 
     const sizesArr = values.sizes.split(",").map((s) => s.trim()).filter(Boolean)
     const colorsArr = values.colors.split(",").map((c) => c.trim()).filter(Boolean)
@@ -233,7 +238,7 @@ function AddProductDialog({
           </div>
 
           {/* Price + Stock row */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="price">
                 Price (৳) <span className="text-destructive">*</span>
@@ -249,6 +254,21 @@ function AddProductDialog({
               />
               {errors.price && (
                 <p className="text-xs text-destructive">{errors.price.message}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="original_price">Original Price (৳)</Label>
+              <Input
+                id="original_price"
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="Optional"
+                className="rounded-xl"
+                {...register("original_price")}
+              />
+              {errors.original_price && (
+                <p className="text-xs text-destructive">{errors.original_price.message}</p>
               )}
             </div>
             <div className="space-y-1.5">
@@ -268,6 +288,17 @@ function AddProductDialog({
                 <p className="text-xs text-destructive">{errors.stock.message}</p>
               )}
             </div>
+          </div>
+
+          {/* Fabric */}
+          <div className="space-y-1.5">
+            <Label htmlFor="fabric">Fabric</Label>
+            <Input
+              id="fabric"
+              placeholder="e.g. Pure Cotton, Half-Silk"
+              className="rounded-xl"
+              {...register("fabric")}
+            />
           </div>
 
           {/* Sizes + Colors row */}
@@ -379,12 +410,14 @@ export default function ProductsPage() {
   const [addOpen, setAddOpen] = React.useState(false)
   const [page, setPage] = React.useState(0)
 
-  const { data: products, isLoading, isError, error, refetch } = useApiQuery<Product[]>(
+  const { data: productsData, isLoading, isError, error, refetch } = useApiQuery<PaginatedProductsResponse>(
     ["adminProducts"],
     "/products",
     { limit: 50, sort_by: "newest" },
     { enabled: true, staleTime: 0, refetchOnMount: true }
   )
+
+  const products = productsData?.products
 
   const { data: lowStockAlerts } = useApiQuery<LowStockAlert[]>(
     ["lowStockAlerts"],

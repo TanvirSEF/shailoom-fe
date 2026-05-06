@@ -1,7 +1,9 @@
 import apiClient from "../api-client";
+import { PaginatedProductsResponse } from "@/types/product";
 
 export const productService = {
-  getProducts: (params?: any) => apiClient.get("/products", { params }),
+  getProducts: (params?: Record<string, unknown>) =>
+    apiClient.get<PaginatedProductsResponse>("/products", { params }),
   createProduct: (formData: FormData) =>
     apiClient.post("/products", formData, {
       headers: { "Content-Type": undefined },
