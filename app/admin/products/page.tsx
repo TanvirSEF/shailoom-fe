@@ -13,6 +13,7 @@ import {
   IconChevronRight,
   IconUpload,
   IconX,
+  IconPencil,
 } from "@tabler/icons-react"
 import { toast } from "sonner"
 import { useForm } from "react-hook-form"
@@ -82,6 +83,7 @@ const addProductSchema = z.object({
   original_price: z.coerce.number().positive("Must be positive").optional(),
   category: z.string().min(1, "Category is required"),
   fabric: z.string().optional(),
+  is_new_arrival: z.boolean().default(true),
   stock: z.coerce.number().int().min(0, "Stock must be 0 or more"),
   sizes: z.string().min(1, 'Sizes required, e.g. S, M, L'),
   colors: z.string().min(1, 'Colors required, e.g. Red, Blue'),
@@ -155,6 +157,7 @@ function AddProductDialog({
     formData.append("stock", String(values.stock))
     if (values.fabric) formData.append("fabric", values.fabric)
     if (values.original_price) formData.append("original_price", String(values.original_price))
+    formData.append("is_new_arrival", String(values.is_new_arrival))
 
     const sizesArr = values.sizes.split(",").map((s) => s.trim()).filter(Boolean)
     const colorsArr = values.colors.split(",").map((c) => c.trim()).filter(Boolean)
@@ -290,15 +293,32 @@ function AddProductDialog({
             </div>
           </div>
 
-          {/* Fabric */}
-          <div className="space-y-1.5">
-            <Label htmlFor="fabric">Fabric</Label>
-            <Input
-              id="fabric"
-              placeholder="e.g. Pure Cotton, Half-Silk"
-              className="rounded-xl"
-              {...register("fabric")}
-            />
+          {/* Fabric + New Arrival Toggle */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="fabric">Fabric</Label>
+              <Input
+                id="fabric"
+                placeholder="e.g. Pure Cotton, Half-Silk"
+                className="rounded-xl"
+                {...register("fabric")}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="is_new_arrival">New Arrival</Label>
+              <label className="flex items-center gap-3 h-10 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="is_new_arrival"
+                  defaultChecked={true}
+                  className="h-5 w-5 rounded border-border accent-primary cursor-pointer"
+                  {...register("is_new_arrival")}
+                />
+                <span className="text-sm text-muted-foreground">
+                  Show on New Arrivals page
+                </span>
+              </label>
+            </div>
           </div>
 
           {/* Sizes + Colors row */}
@@ -404,9 +424,475 @@ function AddProductDialog({
   )
 }
 
+function EditProductDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+  product,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  onSuccess: () => void
+  product: Product | null
+}) {
+  const [newImageFiles, setNewImageFiles] = React.useState<File[]>([])
+  const [existingImages, setExistingImages] = React.useState<string[]>([])
+  const [newImagePreviews, setNewImagePreviews] = React.useState<string[]>([])
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  const sizesStr = Array.isArray(product?.sizes)
+    ? product!.sizes.join(", ")
+    : typeof product?.sizes === "string"
+    ? product!.sizes
+    : ""
+
+  const colorsStr = Array.isArray(product?.colors)
+    ? product!.colors.map((c: Record<string, string> | string) =>
+        typeof c === "object" && c !== null ? c.name ?? JSON.stringify(c) : c
+      ).join(", ")
+    : typeof product?.colors === "string"
+    ? product!.colors
+    : ""
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<AddProductForm>({
+    resolver: zodResolver(addProductSchema),
+    defaultValues: {
+      name: product?.name ?? "",
+      description: (product?.description as string) ?? "",
+      price: product?.price ?? 0,
+      original_price: (product as any)?.original_price ?? undefined,
+      category: product?.category ?? "",
+      fabric: (product as any)?.fabric ?? "",
+      is_new_arrival: (product as any)?.is_new_arrival ?? true,
+      stock: product?.stock ?? 0,
+      sizes: sizesStr,
+      colors: colorsStr,
+    },
+  })
+
+  // Sync existing images when product changes
+  React.useEffect(() => {
+    if (product && open) {
+      const s = Array.isArray(product.sizes)
+        ? product.sizes.join(", ")
+        : typeof product.sizes === "string"
+        ? product.sizes
+        : ""
+      const c = Array.isArray(product.colors)
+        ? product.colors
+            .map((cl: Record<string, string> | string) =>
+              typeof cl === "object" && cl !== null
+                ? cl.name ?? JSON.stringify(cl)
+                : cl
+            )
+            .join(", ")
+        : typeof product.colors === "string"
+        ? product.colors
+        : ""
+
+      reset({
+        name: product.name ?? "",
+        description: (product.description as string) ?? "",
+        price: product.price ?? 0,
+        original_price: (product as any)?.original_price ?? undefined,
+        category: product.category ?? "",
+        fabric: (product as any)?.fabric ?? "",
+        is_new_arrival: (product as any)?.is_new_arrival ?? true,
+        stock: product.stock ?? 0,
+        sizes: s,
+        colors: c,
+      })
+
+      setExistingImages(
+        Array.isArray(product.images) ? [...product.images] : []
+      )
+      setNewImageFiles([])
+      setNewImagePreviews([])
+    }
+  }, [product, open, reset])
+
+  const updateMutation = useApiMutation(
+    async ([productId, formData]: [string | number, FormData]) => {
+      const res = await productService.updateProduct(productId, formData)
+      return res.data
+    },
+    {
+      onSuccess: () => {
+        toast.success("Product updated successfully")
+        setNewImageFiles([])
+        setNewImagePreviews([])
+        onOpenChange(false)
+        onSuccess()
+      },
+      onError: (err: any) => {
+        toast.error(err?.response?.data?.detail ?? "Failed to update product")
+      },
+    }
+  )
+
+  function handleNewFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
+    setNewImageFiles((prev) => [...prev, ...files])
+    const previews = files.map((f) => URL.createObjectURL(f))
+    setNewImagePreviews((prev) => [...prev, ...previews])
+  }
+
+  function removeExistingImage(idx: number) {
+    setExistingImages((prev) => prev.filter((_, i) => i !== idx))
+  }
+
+  function removeNewImage(idx: number) {
+    setNewImageFiles((prev) => prev.filter((_, i) => i !== idx))
+    setNewImagePreviews((prev) => {
+      URL.revokeObjectURL(prev[idx])
+      return prev.filter((_, i) => i !== idx)
+    })
+  }
+
+  function onSubmit(values: AddProductForm) {
+    if (existingImages.length === 0 && newImageFiles.length === 0) {
+      toast.error("Product must have at least one image")
+      return
+    }
+
+    const formData = new FormData()
+    formData.append("name", values.name)
+    formData.append("description", values.description)
+    formData.append("price", String(values.price))
+    formData.append("category", values.category)
+    formData.append("stock", String(values.stock))
+    if (values.fabric) formData.append("fabric", values.fabric)
+    if (values.original_price)
+      formData.append("original_price", String(values.original_price))
+    formData.append("is_new_arrival", String(values.is_new_arrival))
+
+    const sizesArr = values.sizes
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+    const colorsArr = values.colors
+      .split(",")
+      .map((c) => c.trim())
+      .filter(Boolean)
+    formData.append("sizes", JSON.stringify(sizesArr))
+    formData.append("colors", JSON.stringify(colorsArr))
+    formData.append("existing_images", JSON.stringify(existingImages))
+
+    newImageFiles.forEach((file) => {
+      formData.append("image_files", file)
+    })
+
+    updateMutation.mutate([product!.id, formData])
+  }
+
+  function handleClose() {
+    if (updateMutation.isPending) return
+    reset()
+    setNewImageFiles([])
+    newImagePreviews.forEach((url) => URL.revokeObjectURL(url))
+    setNewImagePreviews([])
+    onOpenChange(false)
+  }
+
+  if (!product) return null
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="rounded-2xl max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold">Edit Product</DialogTitle>
+          <DialogDescription>
+            Update product details. Changes are saved immediately.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 mt-2">
+          {/* Name + Category row */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-name">
+                Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="edit-name"
+                placeholder="e.g. Linen Kurta"
+                className="rounded-xl"
+                {...register("name")}
+              />
+              {errors.name && (
+                <p className="text-xs text-destructive">{errors.name.message}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-category">
+                Category <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="edit-category"
+                placeholder="e.g. Kurta, Panjabi"
+                className="rounded-xl"
+                {...register("category")}
+              />
+              {errors.category && (
+                <p className="text-xs text-destructive">
+                  {errors.category.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-description">
+              Description <span className="text-destructive">*</span>
+            </Label>
+            <Textarea
+              id="edit-description"
+              placeholder="Product description..."
+              rows={3}
+              className="rounded-xl resize-none"
+              {...register("description")}
+            />
+            {errors.description && (
+              <p className="text-xs text-destructive">
+                {errors.description.message}
+              </p>
+            )}
+          </div>
+
+          {/* Price + Original Price + Stock row */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-price">
+                Price (৳) <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="edit-price"
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="0.00"
+                className="rounded-xl"
+                {...register("price")}
+              />
+              {errors.price && (
+                <p className="text-xs text-destructive">
+                  {errors.price.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-original_price">Original Price (৳)</Label>
+              <Input
+                id="edit-original_price"
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="Optional"
+                className="rounded-xl"
+                {...register("original_price")}
+              />
+              {errors.original_price && (
+                <p className="text-xs text-destructive">
+                  {errors.original_price.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-stock">
+                Stock <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="edit-stock"
+                type="number"
+                min={0}
+                step="1"
+                placeholder="0"
+                className="rounded-xl"
+                {...register("stock")}
+              />
+              {errors.stock && (
+                <p className="text-xs text-destructive">
+                  {errors.stock.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Fabric + New Arrival Toggle */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-fabric">Fabric</Label>
+              <Input
+                id="edit-fabric"
+                placeholder="e.g. Pure Cotton, Half-Silk"
+                className="rounded-xl"
+                {...register("fabric")}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-is_new_arrival">New Arrival</Label>
+              <label className="flex items-center gap-3 h-10 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="edit-is_new_arrival"
+                  className="h-5 w-5 rounded border-border accent-primary cursor-pointer"
+                  {...register("is_new_arrival")}
+                />
+                <span className="text-sm text-muted-foreground">
+                  Show on New Arrivals page
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {/* Sizes + Colors row */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-sizes">
+                Sizes <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="edit-sizes"
+                placeholder="S, M, L, XL"
+                className="rounded-xl"
+                {...register("sizes")}
+              />
+              <p className="text-xs text-muted-foreground">
+                Comma-separated → sent as JSON array
+              </p>
+              {errors.sizes && (
+                <p className="text-xs text-destructive">
+                  {errors.sizes.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-colors">
+                Colors <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="edit-colors"
+                placeholder="White, Black, Navy"
+                className="rounded-xl"
+                {...register("colors")}
+              />
+              <p className="text-xs text-muted-foreground">
+                Comma-separated → sent as JSON array
+              </p>
+              {errors.colors && (
+                <p className="text-xs text-destructive">
+                  {errors.colors.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Existing Images */}
+          <div className="space-y-2">
+            <Label>Current Images</Label>
+            {existingImages.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {existingImages.map((src, idx) => (
+                  <div key={idx} className="relative group">
+                    <img
+                      src={src}
+                      alt={`existing-${idx}`}
+                      className="h-20 w-20 rounded-xl object-cover border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeExistingImage(idx)}
+                      className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-destructive text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                      <IconX className="size-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                No images remaining. Upload new ones below.
+              </p>
+            )}
+          </div>
+
+          {/* Upload New Images */}
+          <div className="space-y-2">
+            <Label>Add New Images</Label>
+            <div
+              className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/25 p-6 transition-colors hover:border-primary/40 hover:bg-muted/30"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <IconUpload className="size-8 text-muted-foreground/50" />
+              <p className="text-sm text-muted-foreground">
+                Click to upload new images
+              </p>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleNewFileChange}
+            />
+            {newImagePreviews.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {newImagePreviews.map((src, idx) => (
+                  <div key={idx} className="relative group">
+                    <img
+                      src={src}
+                      alt={`new-${idx}`}
+                      className="h-20 w-20 rounded-xl object-cover border border-primary/30"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeNewImage(idx)}
+                      className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-destructive text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                      <IconX className="size-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-xl cursor-pointer"
+              onClick={handleClose}
+              disabled={updateMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="rounded-xl cursor-pointer"
+              disabled={updateMutation.isPending}
+            >
+              {updateMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export default function ProductsPage() {
   const [search, setSearch] = React.useState("")
   const [deleteTarget, setDeleteTarget] = React.useState<Product | null>(null)
+  const [editTarget, setEditTarget] = React.useState<Product | null>(null)
   const [addOpen, setAddOpen] = React.useState(false)
   const [page, setPage] = React.useState(0)
 
@@ -707,6 +1193,14 @@ export default function ProductsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="size-8 rounded-lg hover:bg-primary/10 cursor-pointer"
+                          onClick={() => setEditTarget(product)}
+                        >
+                          <IconPencil className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="size-8 rounded-lg text-destructive hover:bg-destructive/10 cursor-pointer"
                           onClick={() => setDeleteTarget(product)}
                         >
@@ -757,6 +1251,14 @@ export default function ProductsPage() {
         open={addOpen}
         onOpenChange={setAddOpen}
         onSuccess={() => refetch()}
+      />
+
+      {/* Edit Product Dialog */}
+      <EditProductDialog
+        open={!!editTarget}
+        onOpenChange={(v) => { if (!v) setEditTarget(null) }}
+        onSuccess={() => refetch()}
+        product={editTarget}
       />
 
       {/* Delete Confirmation Dialog */}

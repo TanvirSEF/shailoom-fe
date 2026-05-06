@@ -10,8 +10,12 @@ export const productService = {
     }),
   getSuggestions: (query: string) =>
     apiClient.get("/products/search/suggestions", { params: { q: query } }),
-  deleteProduct: (productId: string | number) => 
+  deleteProduct: (productId: string | number) =>
     apiClient.delete(`/products/${productId}`),
+  updateProduct: (productId: string | number, formData: FormData) =>
+    apiClient.patch(`/products/${productId}`, formData, {
+      headers: { "Content-Type": undefined },
+    }),
   getReviews: (productId: string | number) => 
     apiClient.get(`/products/${productId}/reviews`),
   submitReview: (productId: string | number, data: any) => 
