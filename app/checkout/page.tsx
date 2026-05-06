@@ -14,8 +14,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useCartStore } from "@/store/use-cart-store"
 import { useAuthStore } from "@/store/use-auth-store"
-import { useApiMutation } from "@/hooks/use-api"
+import { useApiMutation, useApiQuery } from "@/hooks/use-api"
 import { orderService } from "@/lib/services/order-service"
+import { userService } from "@/lib/services/user-service"
+import type { Address } from "@/types/user"
 
 const STEPS = ["Shipping", "Payment"]
 
@@ -61,6 +63,7 @@ export default function CheckoutPage() {
     handleSubmit,
     formState: { errors },
     getValues,
+    reset,
   } = useForm<ShippingValues>({
     resolver: zodResolver(shippingSchema),
     defaultValues: {
@@ -70,6 +73,18 @@ export default function CheckoutPage() {
       city: "",
     },
   })
+
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+
+  // Fetch saved addresses
+  const { data: savedAddresses } = useApiQuery<Address[]>(
+    ["addresses"],
+    "/users/me/addresses",
+    undefined,
+    { enabled: !!isAuthenticated }
+  )
+
+  const [selectedAddressId, setSelectedAddressId] = React.useState<string | null>(null)
 
   const subtotal = getTotalPrice()
   const shippingZone = (() => {
@@ -205,7 +220,83 @@ export default function CheckoutPage() {
               <h2 className="text-2xl font-bold flex items-center gap-2">
                 <Truck className="h-6 w-6 text-primary" /> Shipping Details
               </h2>
-              <div className="grid grid-cols-2 gap-4">
+
+              {/* Saved Addresses */}
+              {savedAddresses && savedAddresses.length > 0 && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                    Saved Addresses
+                  </Label>
+                  <div className="grid gap-3">
+                    {savedAddresses.map((addr) => (
+                      <button
+                        key={addr.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedAddressId(addr.id)
+                          reset({
+                            full_name: addr.full_name,
+                            phone_number: addr.phone_number,
+                            address: addr.address,
+                            city: addr.city,
+                          })
+                        }}
+                        className={cn(
+                          "flex items-start gap-3 rounded-xl border p-4 text-left transition-all",
+                          selectedAddressId === addr.id
+                            ? "border-primary bg-primary/5 ring-1 ring-primary"
+                            : "border-border hover:border-primary/50"
+                        )}
+                      >
+                        <div className={cn(
+                          "mt-0.5 h-5 w-5 shrink-0 rounded-full border-2 transition-colors",
+                          selectedAddressId === addr.id
+                            ? "border-primary bg-primary"
+                            : "border-muted-foreground/30"
+                        )}>
+                          {selectedAddressId === addr.id && (
+                            <CheckCircle2 className="h-full w-full p-0.5 text-primary-foreground" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold">{addr.label}</span>
+                            {addr.is_default && (
+                              <span className="text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                Default
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm font-medium">{addr.full_name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {addr.address}, {addr.city} · {addr.phone_number}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedAddressId(null)
+                        reset({ full_name: "", phone_number: "+880", address: "", city: "" })
+                      }}
+                      className={cn(
+                        "flex items-center gap-2 rounded-xl border border-dashed p-3 text-sm font-medium transition-all",
+                        !selectedAddressId
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border text-muted-foreground hover:border-primary/50"
+                      )}
+                    >
+                      + Enter a new address
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className={cn(
+                "grid grid-cols-2 gap-4",
+                savedAddresses && savedAddresses.length > 0 && selectedAddressId && "opacity-50 pointer-events-none"
+              )}>
                 <div className="grid gap-2">
                   <Label htmlFor="full_name">Full Name</Label>
                   <Input

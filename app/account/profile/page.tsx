@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Loader2, ShieldCheck, Pencil, X, Phone, MapPin, Mail } from "lucide-react"
+import { Loader2, ShieldCheck, Pencil, X, Phone, MapPin, Mail, Plus, Trash2, Star } from "lucide-react"
 
 import { useApiQuery, useApiMutation } from "@/hooks/use-api"
 import { userService } from "@/lib/services/user-service"
 import { profileUpdateSchema, ProfileUpdateValues } from "@/lib/validations/user.schema"
 import { User } from "@/types/auth"
+import type { Address } from "@/types/user"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/use-auth-store"
 
@@ -113,6 +114,7 @@ export default function ProfilePage() {
   }
 
   return (
+  <>
     <div className="rounded-2xl border bg-card text-card-foreground shadow-sm overflow-hidden">
       {/* Card Header */}
       <div className="flex items-center justify-between p-6 md:p-8 bg-muted/30 border-b">
@@ -246,6 +248,243 @@ export default function ProfilePage() {
               </div>
             </form>
           </>
+        )}
+      </div>
+    </div>
+
+    {/* ── ADDRESS BOOK ── */}
+    <AddressBookSection />
+  </>
+  )
+}
+
+function AddressBookSection() {
+  const [showForm, setShowForm] = React.useState(false)
+  const [formLabel, setFormLabel] = React.useState("Home")
+  const [formFullName, setFormFullName] = React.useState("")
+  const [formPhone, setFormPhone] = React.useState("+880")
+  const [formAddress, setFormAddress] = React.useState("")
+  const [formCity, setFormCity] = React.useState("")
+
+  const { data: addresses = [], isLoading, refetch } = useApiQuery<Address[]>(
+    ["addresses"],
+    "/users/me/addresses"
+  )
+
+  const addMutation = useApiMutation(userService.addAddress, {
+    onSuccess: () => {
+      toast.success("Address added")
+      setShowForm(false)
+      setFormFullName("")
+      setFormPhone("+880")
+      setFormAddress("")
+      setFormCity("")
+      refetch()
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.detail || "Failed to add address")
+    },
+  })
+
+  const deleteMutation = useApiMutation(userService.deleteAddress, {
+    onSuccess: () => {
+      toast.success("Address deleted")
+      refetch()
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.detail || "Failed to delete")
+    },
+  })
+
+  const defaultMutation = useApiMutation(userService.setDefaultAddress, {
+    onSuccess: () => {
+      toast.success("Default address updated")
+      refetch()
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.detail || "Failed to update")
+    },
+  })
+
+  function handleAdd(e: React.FormEvent) {
+    e.preventDefault()
+    if (!formFullName.trim() || !formPhone.trim() || !formAddress.trim() || !formCity.trim()) {
+      toast.error("Please fill in all fields")
+      return
+    }
+    addMutation.mutate({
+      label: formLabel,
+      full_name: formFullName,
+      phone_number: formPhone,
+      address: formAddress,
+      city: formCity,
+      is_default: addresses.length === 0,
+    })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="mt-6 rounded-2xl border bg-card p-8">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-6 rounded-2xl border bg-card text-card-foreground shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between p-6 md:p-8 bg-muted/30 border-b">
+        <div>
+          <h3 className="text-xl font-semibold flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-primary" /> Saved Addresses
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Manage your delivery addresses (max 5)
+          </p>
+        </div>
+        {!showForm && addresses.length < 5 && (
+          <Button
+            onClick={() => setShowForm(true)}
+            size="sm"
+            variant="outline"
+            className="flex items-center gap-2 rounded-full"
+          >
+            <Plus className="h-3.5 w-3.5" /> Add Address
+          </Button>
+        )}
+      </div>
+
+      <div className="p-6 md:p-8">
+        {addresses.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {addresses.map((addr) => (
+              <div
+                key={addr.id}
+                className={cn(
+                  "rounded-xl border p-4 transition-all",
+                  addr.is_default ? "border-primary bg-primary/5" : "border-border"
+                )}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold">{addr.label}</span>
+                    {addr.is_default && (
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                        Default
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {!addr.is_default && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-primary"
+                        onClick={() => defaultMutation.mutate(addr.id)}
+                        title="Set as default"
+                      >
+                        <Star className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      onClick={() => deleteMutation.mutate(addr.id)}
+                      disabled={deleteMutation.isPending}
+                      title="Delete address"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-sm font-medium">{addr.full_name}</p>
+                <p className="text-xs text-muted-foreground mt-1">{addr.address}</p>
+                <p className="text-xs text-muted-foreground">
+                  {addr.city} · {addr.phone_number}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            No saved addresses yet. Add one to speed up checkout.
+          </p>
+        )}
+
+        {showForm && (
+          <form onSubmit={handleAdd} className="mt-6 space-y-4 rounded-xl border p-4 bg-muted/20">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Label</Label>
+                <select
+                  value={formLabel}
+                  onChange={(e) => setFormLabel(e.target.value)}
+                  className="h-10 rounded-lg border bg-background px-3 text-sm"
+                >
+                  <option value="Home">Home</option>
+                  <option value="Office">Office</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div className="grid gap-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Full Name</Label>
+                <Input
+                  value={formFullName}
+                  onChange={(e) => setFormFullName(e.target.value)}
+                  placeholder="John Doe"
+                  className="h-10 rounded-lg"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Phone</Label>
+                <Input
+                  value={formPhone}
+                  onChange={(e) => setFormPhone(e.target.value)}
+                  placeholder="+8801XXXXXXXXX"
+                  className="h-10 rounded-lg"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">City</Label>
+                <Input
+                  value={formCity}
+                  onChange={(e) => setFormCity(e.target.value)}
+                  placeholder="dhaka, chittagong..."
+                  className="h-10 rounded-lg"
+                />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Address</Label>
+              <Input
+                value={formAddress}
+                onChange={(e) => setFormAddress(e.target.value)}
+                placeholder="House, Road, Area"
+                className="h-10 rounded-lg"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                type="submit"
+                size="sm"
+                className="rounded-full px-6"
+                disabled={addMutation.isPending}
+              >
+                {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Address"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="rounded-full"
+                onClick={() => setShowForm(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
         )}
       </div>
     </div>
