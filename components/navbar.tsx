@@ -93,6 +93,15 @@ export function Navbar() {
     router.push(`/product/${item.id || item.product_id}`)
   }
 
+  const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && searchQuery.trim()) {
+      e.preventDefault()
+      setShowSearch(false)
+      setSearchResults([])
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+    }
+  }
+
   React.useEffect(() => {
     if (itemCount > 0) {
       setIsAnimating(true)
@@ -156,6 +165,7 @@ export function Navbar() {
                       setSearchQuery(e.target.value)
                       setShowSearch(true)
                     }}
+                    onKeyDown={handleSearchSubmit}
                     className="h-9 w-full rounded-full bg-muted/50 pl-8 text-sm transition-all focus-visible:ring-primary"
                   />
                   {showSearch && searchResults.length > 0 && (
@@ -335,6 +345,7 @@ export function Navbar() {
                 setSearchQuery(e.target.value)
                 setShowSearch(true)
               }}
+              onKeyDown={handleSearchSubmit}
               onFocus={() => searchQuery.trim() && setShowSearch(true)}
               className="h-9 w-32 rounded-full bg-muted/50 pl-8 text-sm transition-all focus-visible:ring-primary lg:w-48"
             />
