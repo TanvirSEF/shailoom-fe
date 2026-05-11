@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuthStore } from "@/store/use-auth-store";
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://api.shailoom.com",
   headers: {
     "Content-Type": "application/json",
   },
@@ -73,7 +73,7 @@ apiClient.interceptors.response.use(
 
       try {
         const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+          `${process.env.NEXT_PUBLIC_API_URL || "https://api.shailoom.com"}/auth/refresh`,
           {},
           {
             headers: {
