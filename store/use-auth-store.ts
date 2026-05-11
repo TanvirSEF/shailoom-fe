@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 
 interface AuthState {
   token: string | null;
-  refreshToken: string | null;
+  refreshToken: string | null; 
   role: string | null;
   isAuthenticated: boolean;
   _hasHydrated: boolean;
