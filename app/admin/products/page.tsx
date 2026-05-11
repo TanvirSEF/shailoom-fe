@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import {
   IconSearch,
   IconPlus,
@@ -1211,8 +1212,8 @@ export default function ProductsPage() {
                     <TableRow key={String(product.id)} className="hover:bg-muted/50 transition-colors">
                       <TableCell className="hidden sm:table-cell">
                         {mainImage ? (
-                          <div className="h-10 w-10 rounded-lg overflow-hidden bg-muted">
-                            <img src={mainImage} alt={product.name} className="h-full w-full object-cover" />
+                          <div className="h-10 w-10 rounded-lg overflow-hidden bg-muted relative">
+                            <Image src={mainImage} alt={product.name} fill className="object-cover" />
                           </div>
                         ) : (
                           <div className="h-10 w-10 rounded-lg bg-muted/50 flex items-center justify-center">
