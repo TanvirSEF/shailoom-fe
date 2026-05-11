@@ -90,7 +90,7 @@ export function Navbar() {
     setShowSearch(false)
     setSearchQuery("")
     setSearchResults([])
-    router.push(`/product/${item.id || item.product_id}`)
+    router.push(`/product/${item._id || item.id || item.product_id}`)
   }
 
   const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {

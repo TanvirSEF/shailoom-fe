@@ -16,7 +16,7 @@ const CATEGORIES = [
     id: 2,
     name: "Boutique 3-piece",
     image: "/images/categories/boutique.png",
-    href: "/shop/boutique",
+    href: "/three-piece",
     description: "Exclusive designer salwar kameez",
   },
   {

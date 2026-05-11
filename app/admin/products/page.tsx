@@ -16,7 +16,7 @@ import {
   IconPencil,
 } from "@tabler/icons-react"
 import { toast } from "sonner"
-import { useForm } from "react-hook-form"
+import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useApiQuery, useApiMutation } from "@/hooks/use-api"
@@ -45,6 +45,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Card,
   CardContent,
@@ -76,6 +83,17 @@ interface LowStockAlert {
   threshold: number
 }
 
+const CATEGORIES = [
+  "Saree",
+  "Three-Piece",
+  "Kurta",
+  "Panjabi",
+  "Fatua",
+  "Shirt",
+  "Trousers",
+  "Dupatta",
+] as const
+
 const addProductSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
@@ -84,6 +102,7 @@ const addProductSchema = z.object({
   category: z.string().min(1, "Category is required"),
   fabric: z.string().optional(),
   is_new_arrival: z.boolean().default(true),
+  is_on_sale: z.boolean().default(false),
   stock: z.coerce.number().int().min(0, "Stock must be 0 or more"),
   sizes: z.string().min(1, 'Sizes required, e.g. S, M, L'),
   colors: z.string().min(1, 'Colors required, e.g. Red, Blue'),
@@ -108,6 +127,7 @@ function AddProductDialog({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<AddProductForm>({
     resolver: zodResolver(addProductSchema),
@@ -158,6 +178,7 @@ function AddProductDialog({
     if (values.fabric) formData.append("fabric", values.fabric)
     if (values.original_price) formData.append("original_price", String(values.original_price))
     formData.append("is_new_arrival", String(values.is_new_arrival))
+    formData.append("is_on_sale", String(values.is_on_sale))
 
     const sizesArr = values.sizes.split(",").map((s) => s.trim()).filter(Boolean)
     const colorsArr = values.colors.split(",").map((c) => c.trim()).filter(Boolean)
@@ -208,14 +229,26 @@ function AddProductDialog({
               )}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="category">
+              <Label>
                 Category <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="category"
-                placeholder="e.g. Kurta, Panjabi"
-                className="rounded-xl"
-                {...register("category")}
+              <Controller
+                name="category"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               />
               {errors.category && (
                 <p className="text-xs text-destructive">{errors.category.message}</p>
@@ -316,6 +349,21 @@ function AddProductDialog({
                 />
                 <span className="text-sm text-muted-foreground">
                   Show on New Arrivals page
+                </span>
+              </label>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="is_on_sale">On Sale</Label>
+              <label className="flex items-center gap-3 h-10 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="is_on_sale"
+                  defaultChecked={false}
+                  className="h-5 w-5 rounded border-border accent-primary cursor-pointer"
+                  {...register("is_on_sale")}
+                />
+                <span className="text-sm text-muted-foreground">
+                  Show on Sale page
                 </span>
               </label>
             </div>
@@ -458,6 +506,7 @@ function EditProductDialog({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<AddProductForm>({
     resolver: zodResolver(addProductSchema),
@@ -469,6 +518,7 @@ function EditProductDialog({
       category: product?.category ?? "",
       fabric: (product as any)?.fabric ?? "",
       is_new_arrival: (product as any)?.is_new_arrival ?? true,
+      is_on_sale: (product as any)?.is_on_sale ?? false,
       stock: product?.stock ?? 0,
       sizes: sizesStr,
       colors: colorsStr,
@@ -503,6 +553,7 @@ function EditProductDialog({
         category: product.category ?? "",
         fabric: (product as any)?.fabric ?? "",
         is_new_arrival: (product as any)?.is_new_arrival ?? true,
+        is_on_sale: (product as any)?.is_on_sale ?? false,
         stock: product.stock ?? 0,
         sizes: s,
         colors: c,
@@ -571,6 +622,7 @@ function EditProductDialog({
     if (values.original_price)
       formData.append("original_price", String(values.original_price))
     formData.append("is_new_arrival", String(values.is_new_arrival))
+    formData.append("is_on_sale", String(values.is_on_sale))
 
     const sizesArr = values.sizes
       .split(",")
@@ -630,14 +682,26 @@ function EditProductDialog({
               )}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="edit-category">
+              <Label>
                 Category <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="edit-category"
-                placeholder="e.g. Kurta, Panjabi"
-                className="rounded-xl"
-                {...register("category")}
+              <Controller
+                name="category"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               />
               {errors.category && (
                 <p className="text-xs text-destructive">
@@ -747,6 +811,20 @@ function EditProductDialog({
                 />
                 <span className="text-sm text-muted-foreground">
                   Show on New Arrivals page
+                </span>
+              </label>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-is_on_sale">On Sale</Label>
+              <label className="flex items-center gap-3 h-10 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="edit-is_on_sale"
+                  className="h-5 w-5 rounded border-border accent-primary cursor-pointer"
+                  {...register("is_on_sale")}
+                />
+                <span className="text-sm text-muted-foreground">
+                  Show on Sale page
                 </span>
               </label>
             </div>

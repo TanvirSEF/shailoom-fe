@@ -20,6 +20,7 @@ export interface Product {
   shipping_fee_outside_dhaka?: number
   is_active?: boolean
   is_new_arrival?: boolean
+  is_on_sale?: boolean
   created_at?: string
 }
 
