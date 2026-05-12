@@ -26,8 +26,8 @@ export interface CreateCouponData {
 export const adminService = {
   // Orders
   getAllOrders: () => apiClient.get("/admin/orders"),
-  updateOrderStatus: (trackingId: string, status: string) => 
-    apiClient.patch(`/admin/orders/${trackingId}`, { status }),
+  updateOrderStatus: (trackingId: string, status: string) =>
+    apiClient.patch(`/admin/orders/${trackingId}?order_status=${encodeURIComponent(status)}`),
 
   // Analytics
   getSalesAnalytics: () => apiClient.get("/admin/analytics/sales"),

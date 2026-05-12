@@ -31,7 +31,7 @@ const shippingSchema = z.object({
 type ShippingValues = z.infer<typeof shippingSchema>
 
 const SHIPPING_ZONES: Record<string, number> = {
-  dhaka: 60,
+  dhaka: 70,
   chittagong: 120,
   sylhet: 120,
   rajshahi: 120,
@@ -338,7 +338,7 @@ export default function CheckoutPage() {
                 />
                 {errors.city && <p className="text-xs font-semibold text-destructive">{errors.city.message}</p>}
                 <p className="text-xs text-muted-foreground">
-                  Shipping inside Dhaka: ৳60 | Outside Dhaka: ৳120-150
+                  Shipping inside Dhaka: ৳70 | Outside Dhaka: ৳120-150
                 </p>
               </div>
 
