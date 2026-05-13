@@ -4,6 +4,7 @@ import * as React from "react"
 import { motion } from "framer-motion"
 import { Mail, Phone, MapPin, Clock, MessageSquare, Send, Globe, Facebook, Instagram, Youtube } from "lucide-react"
 import { toast } from "sonner"
+import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -74,8 +75,7 @@ export default function ContactPage() {
                  </div>
                  <div className="space-y-1">
                     <h4 className="text-xl font-bold">Email Support</h4>
-                    <p className="text-muted-foreground">hello@shailoom.com</p>
-                    <p className="text-muted-foreground">corporate@shailoom.com</p>
+                    <p className="text-muted-foreground">shailoombangladesh@gmail.com</p>
                  </div>
               </div>
 
@@ -94,9 +94,13 @@ export default function ContactPage() {
             <div className="space-y-4">
                <h4 className="text-lg font-bold">Connect With Us</h4>
                <div className="flex gap-4">
-                  {[Facebook, Instagram, Youtube].map((Icon, idx) => (
-                    <Button key={idx} variant="outline" size="icon" className="h-12 w-12 rounded-full border-border/50 hover:bg-primary hover:text-white transition-all transform hover:scale-110">
-                       <Icon className="h-5 w-5" />
+                  {[
+                    { Icon: Facebook, href: "https://www.facebook.com/shailoom" },
+                    { Icon: Instagram, href: "#" },
+                    { Icon: Youtube, href: "#" },
+                  ].map(({ Icon, href }, idx) => (
+                    <Button key={idx} variant="outline" size="icon" asChild className="h-12 w-12 rounded-full border-border/50 hover:bg-primary hover:text-white transition-all transform hover:scale-110">
+                       <Link href={href} target="_blank"><Icon className="h-5 w-5" /></Link>
                     </Button>
                   ))}
                </div>

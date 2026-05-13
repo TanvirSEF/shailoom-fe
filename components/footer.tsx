@@ -26,7 +26,8 @@ export function Footer() {
             </p>
             <div className="mt-4 flex items-center gap-4">
               <Link
-                href="#"
+                href="https://www.facebook.com/shailoom"
+                target="_blank"
                 className="text-muted-foreground transition-colors hover:text-primary"
               >
                 <Facebook className="h-5 w-5" />
