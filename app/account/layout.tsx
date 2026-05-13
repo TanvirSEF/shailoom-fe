@@ -8,17 +8,17 @@ import { useAuthStore } from "@/store/use-auth-store"
 
 export default function AccountLayout({ children }: { children: ReactNode }) {
   const router = useRouter()
-  const { isAuthenticated, token } = useAuthStore()
+  const { isAuthenticated, token, _hasHydrated } = useAuthStore()
   const [isChecking, setIsChecking] = useState(true)
 
   useEffect(() => {
-    // Check authentication status
+    if (!_hasHydrated) return
     if (!isAuthenticated || !token) {
       router.push("/login")
     } else {
       setIsChecking(false)
     }
-  }, [isAuthenticated, token, router])
+  }, [_hasHydrated, isAuthenticated, token, router])
 
   // Show loading state while checking authentication
   if (isChecking) {
