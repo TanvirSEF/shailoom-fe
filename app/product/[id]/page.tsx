@@ -175,7 +175,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         <ol className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-widest">
           <li><Link href="/" className="hover:text-primary">Home</Link></li>
           <ChevronRight className="h-3 w-3" />
-          <li><Link href="/shop/sarees" className="hover:text-primary">Sarees</Link></li>
+          <li><Link href={product.category?.toLowerCase() === "three-piece" ? "/three-piece" : product.category?.toLowerCase() === "new-arrival" ? "/new-arrivals" : "/shop/sarees"} className="hover:text-primary">{product.category?.toLowerCase() === "three-piece" ? "Three Piece" : product.category?.toLowerCase() === "new-arrival" ? "New Arrivals" : "Sarees"}</Link></li>
           <ChevronRight className="h-3 w-3" />
           <li className="text-foreground font-bold">{product.name}</li>
         </ol>
