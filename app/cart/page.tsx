@@ -3,13 +3,17 @@
 import * as React from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { useCartStore } from "@/store/use-cart-store"
+import { useAuthStore } from "@/store/use-auth-store"
 
 export default function CartPage() {
+  const router = useRouter()
   const { items, removeItem, updateQuantity, getTotalPrice } = useCartStore()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -126,11 +130,18 @@ export default function CartPage() {
               </div>
 
               <div className="pt-6">
-                <Link href="/checkout">
-                  <Button className="w-full h-14 rounded-2xl text-lg font-bold uppercase tracking-widest shadow-2xl transition-all hover:scale-[1.02]">
+                  <Button
+                    className="w-full h-14 rounded-2xl text-lg font-bold uppercase tracking-widest shadow-2xl transition-all hover:scale-[1.02]"
+                    onClick={() => {
+                      if (isAuthenticated) {
+                        router.push("/checkout")
+                      } else {
+                        router.push("/login?redirect=/checkout")
+                      }
+                    }}
+                  >
                     Checkout Now <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
-                </Link>
               </div>
 
               <p className="text-center text-xs text-muted-foreground mt-4">

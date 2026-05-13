@@ -121,6 +121,19 @@ export default function OrdersPage() {
     }
   )
 
+  const handleShipViaSteadfast = async (trackingId: string, currentStatus?: string) => {
+    const lower = currentStatus?.toLowerCase()
+    if (lower === "pending") {
+      try {
+        await adminService.updateOrderStatus(trackingId, "confirmed")
+      } catch {
+        toast.error("Failed to confirm order before shipping")
+        return
+      }
+    }
+    createConsignmentMutation.mutate(trackingId)
+  }
+
   const createConsignmentMutation = useApiMutation(
     (trackingId: string) => adminService.createConsignment(trackingId),
     {
@@ -301,24 +314,111 @@ export default function OrdersPage() {
                       {order.created_at ? new Date(order.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
                     </TableCell>
                     <TableCell>
-                      <Select
-                        value={order.status}
-                        onValueChange={(value) =>
-                          updateStatusMutation.mutate({ trackingId: order.tracking_id, status: value })
-                        }
-                      >
-                        <SelectTrigger className="h-8 w-28 rounded-lg text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="confirmed">Confirmed</SelectItem>
-                          <SelectItem value="processing">Processing</SelectItem>
-                          <SelectItem value="shipped">Shipped</SelectItem>
-                          <SelectItem value="delivered">Delivered</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center gap-1.5">
+                        {order.status?.toLowerCase() === "shipped" && order.steadfast ? (
+                          <span className="text-xs text-purple-600 font-medium flex items-center gap-1">
+                            <IconTruck className="size-3.5" /> Shipped
+                          </span>
+                        ) : order.status?.toLowerCase() === "shipped" && !order.steadfast ? (
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs rounded-lg bg-purple-600 hover:bg-purple-700 text-white"
+                            onClick={() => handleShipViaSteadfast(order.tracking_id, order.status)}
+                            disabled={createConsignmentMutation.isPending}
+                          >
+                            {createConsignmentMutation.isPending ? (
+                              <IconLoader className="size-3 mr-1 animate-spin" />
+                            ) : (
+                              <IconTruck className="size-3 mr-1" />
+                            )}
+                            Ship
+                          </Button>
+                        ) : ["confirmed", "processing"].includes(order.status?.toLowerCase() || "") ? (
+                          <div className="flex items-center gap-1.5">
+                            <Select
+                              value={order.status}
+                              onValueChange={(value) =>
+                                updateStatusMutation.mutate({ trackingId: order.tracking_id, status: value })
+                              }
+                            >
+                              <SelectTrigger className="h-8 w-24 rounded-lg text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="confirmed">Confirmed</SelectItem>
+                                <SelectItem value="processing">Processing</SelectItem>
+                                <SelectItem value="delivered">Delivered</SelectItem>
+                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs rounded-lg bg-purple-600 hover:bg-purple-700 text-white"
+                              onClick={() => handleShipViaSteadfast(order.tracking_id, order.status)}
+                              disabled={createConsignmentMutation.isPending}
+                            >
+                              {createConsignmentMutation.isPending ? (
+                                <IconLoader className="size-3 mr-1 animate-spin" />
+                              ) : (
+                                <IconTruck className="size-3 mr-1" />
+                              )}
+                              Ship
+                            </Button>
+                          </div>
+                        ) : order.status?.toLowerCase() === "pending" ? (
+                          <div className="flex items-center gap-1.5">
+                            <Select
+                              value={order.status}
+                              onValueChange={(value) =>
+                                updateStatusMutation.mutate({ trackingId: order.tracking_id, status: value })
+                              }
+                            >
+                              <SelectTrigger className="h-8 w-24 rounded-lg text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="confirmed">Confirmed</SelectItem>
+                                <SelectItem value="processing">Processing</SelectItem>
+                                <SelectItem value="delivered">Delivered</SelectItem>
+                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs rounded-lg bg-purple-600 hover:bg-purple-700 text-white"
+                              onClick={() => handleShipViaSteadfast(order.tracking_id, order.status)}
+                              disabled={createConsignmentMutation.isPending}
+                            >
+                              {createConsignmentMutation.isPending ? (
+                                <IconLoader className="size-3 mr-1 animate-spin" />
+                              ) : (
+                                <IconTruck className="size-3 mr-1" />
+                              )}
+                              Ship
+                            </Button>
+                          </div>
+                        ) : (
+                          <Select
+                            value={order.status}
+                            onValueChange={(value) =>
+                              updateStatusMutation.mutate({ trackingId: order.tracking_id, status: value })
+                            }
+                          >
+                            <SelectTrigger className="h-8 w-28 rounded-lg text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="confirmed">Confirmed</SelectItem>
+                              <SelectItem value="processing">Processing</SelectItem>
+                              <SelectItem value="delivered">Delivered</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -469,7 +569,7 @@ export default function OrdersPage() {
                           size="sm"
                           variant="outline"
                           className="h-7 text-xs rounded-lg"
-                          onClick={() => window.open(`https://portal.packzy.com/track/${selectedOrder.steadfast!.tracking_code}`, "_blank")}
+                          onClick={() => window.open(`https://steadfast.com.bd/tracking?tracking_code=${selectedOrder.steadfast!.tracking_code}`, "_blank")}
                         >
                           <IconExternalLink className="size-3 mr-1" />
                           Track
@@ -484,7 +584,7 @@ export default function OrdersPage() {
                       <Button
                         size="sm"
                         className="h-8 text-xs rounded-lg bg-purple-600 hover:bg-purple-700 text-white"
-                        onClick={() => createConsignmentMutation.mutate(selectedOrder.tracking_id)}
+                        onClick={() => handleShipViaSteadfast(selectedOrder.tracking_id, selectedOrder.status)}
                         disabled={createConsignmentMutation.isPending}
                       >
                         {createConsignmentMutation.isPending ? (

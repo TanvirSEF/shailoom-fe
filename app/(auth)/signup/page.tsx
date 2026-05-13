@@ -3,7 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,10 +20,14 @@ import { cn } from "@/lib/utils";
 import { signupSchema, type SignupValues } from "@/lib/validations/auth.schema";
 import { useApiMutation } from "@/hooks/use-api";
 import { authService } from "@/lib/services/auth-service";
+import { useAuthStore } from "@/store/use-auth-store";
 import { AuthResponse } from "@/types/auth";
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect") || "/";
+  const { setAuth } = useAuthStore();
   const [showPassword, setShowPassword] = React.useState(false);
 
   const {
@@ -43,9 +47,10 @@ export default function SignupPage() {
   const { mutate: signup, isPending } = useApiMutation<AuthResponse, SignupValues>(
     authService.signup,
     {
-      onSuccess: () => {
-        toast.success("Account created successfully! Please sign in.");
-        router.push("/login");
+      onSuccess: (data) => {
+        setAuth(data.access_token, data.role, data.refresh_token);
+        toast.success("Account created successfully!");
+        router.push(redirect);
       },
       onError: (error: any) => {
         const message = error.response?.data?.detail || "Something went wrong. Please try again.";
@@ -230,7 +235,7 @@ export default function SignupPage() {
 
               <p className="text-center text-sm text-muted-foreground pt-2">
                 Already have an account?{" "}
-                <Link href="/login" className="font-bold text-primary hover:underline underline-offset-4">
+                <Link href={redirect !== "/" ? `/login?redirect=${redirect}` : "/login"} className="font-bold text-primary hover:underline underline-offset-4">
                   Sign in
                 </Link>
               </p>

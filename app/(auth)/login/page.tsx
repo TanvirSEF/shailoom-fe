@@ -3,7 +3,7 @@
 import * as React from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ArrowLeft, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react"
@@ -21,6 +21,8 @@ import { AuthResponse } from "@/types/auth"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirect = searchParams.get("redirect") || "/"
   const { setAuth, isAuthenticated, role, _hasHydrated } = useAuthStore()
   const [showPassword, setShowPassword] = React.useState(false)
 
@@ -29,10 +31,10 @@ export default function LoginPage() {
       if (role === "admin") {
         router.push("/admin")
       } else {
-        router.push("/")
+        router.push(redirect)
       }
     }
-  }, [isAuthenticated, role, _hasHydrated, router])
+  }, [isAuthenticated, role, _hasHydrated, router, redirect])
 
   const {
     register,
@@ -56,7 +58,7 @@ export default function LoginPage() {
         if (data.role === "admin") {
           router.push("/admin")
         } else {
-          router.push("/")
+          router.push(redirect)
         }
       },
       onError: (error: any) => {
@@ -176,7 +178,7 @@ export default function LoginPage() {
 
                 <p className="text-center text-sm text-muted-foreground">
                   Don't have an account?{" "}
-                  <Link href="/signup" className="font-bold text-primary hover:underline underline-offset-4">
+                  <Link href={redirect !== "/" ? `/signup?redirect=${redirect}` : "/signup"} className="font-bold text-primary hover:underline underline-offset-4">
                     Sign up for free
                   </Link>
                 </p>

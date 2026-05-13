@@ -30,7 +30,7 @@ export function AccountSidebar() {
         <nav className="flex flex-col gap-1 text-sm font-medium">
           {sidebarLinks.map((link) => {
             const Icon = link.icon
-            const isActive = pathname === link.href
+            const isActive = pathname === link.href || pathname.startsWith(link.href + "/")
 
             return (
               <Link
@@ -40,7 +40,7 @@ export function AccountSidebar() {
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-200",
                   isActive 
                     ? "bg-primary/10 text-primary font-semibold" 
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 <Icon className={cn("h-4 w-4", isActive && "text-primary")} /> {link.label}

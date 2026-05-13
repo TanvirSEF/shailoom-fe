@@ -8,15 +8,24 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useCartStore } from "@/store/use-cart-store"
 import { useAuthStore } from "@/store/use-auth-store"
 import { useApiMutation, useApiQuery } from "@/hooks/use-api"
 import { orderService } from "@/lib/services/order-service"
 import { userService } from "@/lib/services/user-service"
+import { cn } from "@/lib/utils"
 import type { Address } from "@/types/user"
 
 const STEPS = ["Shipping", "Payment"]
@@ -25,25 +34,19 @@ const shippingSchema = z.object({
   full_name: z.string().min(2, "Name is required"),
   phone_number: z.string().min(11, "Valid phone number is required"),
   address: z.string().min(5, "Address is required"),
-  city: z.string().min(2, "City is required"),
 })
 
 type ShippingValues = z.infer<typeof shippingSchema>
 
 const SHIPPING_ZONES: Record<string, number> = {
   dhaka: 70,
-  chittagong: 120,
-  sylhet: 120,
-  rajshahi: 120,
-  khulna: 120,
-  barishal: 120,
-  rangpur: 130,
-  mymensingh: 100,
-  outside: 150,
+  outside: 120,
 }
 
 export default function CheckoutPage() {
+  const router = useRouter()
   const { items, getTotalPrice, clearCart } = useCartStore()
+  const { isAuthenticated, _hasHydrated } = useAuthStore()
   const [currentStep, setCurrentStep] = React.useState(0)
   const [isSuccess, setIsSuccess] = React.useState(false)
   const [orderTrackingId, setOrderTrackingId] = React.useState("")
@@ -52,11 +55,18 @@ export default function CheckoutPage() {
   const [couponDiscount, setCouponDiscount] = React.useState(0)
   const [couponMessage, setCouponMessage] = React.useState("")
   const [isValidatingCoupon, setIsValidatingCoupon] = React.useState(false)
-  const [paymentMethod, setPaymentMethod] = React.useState("cod")
+  const [paymentMethod] = React.useState("cod")
+  const [selectedZone, setSelectedZone] = React.useState("")
 
   React.useEffect(() => {
     setMounted(true)
   }, [])
+
+  React.useEffect(() => {
+    if (mounted && _hasHydrated && !isAuthenticated) {
+      router.replace("/login?redirect=/checkout")
+    }
+  }, [mounted, _hasHydrated, isAuthenticated, router])
 
   const {
     register,
@@ -70,11 +80,8 @@ export default function CheckoutPage() {
       full_name: "",
       phone_number: "+880",
       address: "",
-      city: "",
     },
   })
-
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   // Fetch saved addresses
   const { data: savedAddresses } = useApiQuery<Address[]>(
@@ -88,8 +95,7 @@ export default function CheckoutPage() {
 
   const subtotal = getTotalPrice()
   const shippingZone = (() => {
-    const city = (getValues("city") || "").toLowerCase()
-    if (SHIPPING_ZONES[city] !== undefined) return { zone: city, cost: SHIPPING_ZONES[city] }
+    if (selectedZone && SHIPPING_ZONES[selectedZone] !== undefined) return { zone: selectedZone, cost: SHIPPING_ZONES[selectedZone] }
     return { zone: "outside", cost: SHIPPING_ZONES.outside }
   })()
   const totalAmount = subtotal - couponDiscount + shippingZone.cost
@@ -98,8 +104,8 @@ export default function CheckoutPage() {
     async () => {
       const values = getValues()
       return orderService.placeOrder({
-        shipping_address: `${values.address}, ${values.city}`,
-        shipping_zone: shippingZone.zone,
+        shipping_address: values.address,
+        shipping_zone: selectedZone || "outside",
         phone_number: values.phone_number,
         total_amount: totalAmount,
         payment_method: paymentMethod,
@@ -238,7 +244,6 @@ export default function CheckoutPage() {
                             full_name: addr.full_name,
                             phone_number: addr.phone_number,
                             address: addr.address,
-                            city: addr.city,
                           })
                         }}
                         className={cn(
@@ -278,7 +283,7 @@ export default function CheckoutPage() {
                       type="button"
                       onClick={() => {
                         setSelectedAddressId(null)
-                        reset({ full_name: "", phone_number: "+880", address: "", city: "" })
+                        reset({ full_name: "", phone_number: "+880", address: "" })
                       }}
                       className={cn(
                         "flex items-center gap-2 rounded-xl border border-dashed p-3 text-sm font-medium transition-all",
@@ -329,20 +334,22 @@ export default function CheckoutPage() {
                 {errors.address && <p className="text-xs font-semibold text-destructive">{errors.address.message}</p>}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  placeholder="dhaka, chittagong, sylhet..."
-                  className={cn("h-12 rounded-xl", errors.city && "border-destructive")}
-                  {...register("city")}
-                />
-                {errors.city && <p className="text-xs font-semibold text-destructive">{errors.city.message}</p>}
-                <p className="text-xs text-muted-foreground">
-                  Shipping inside Dhaka: ৳70 | Outside Dhaka: ৳120-150
-                </p>
+                <Label>City / Delivery Zone</Label>
+                <Select value={selectedZone} onValueChange={setSelectedZone}>
+                  <SelectTrigger className={cn("h-12 rounded-xl", !selectedZone && "text-muted-foreground")}>
+                    <SelectValue placeholder="Select your city" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dhaka">Inside Dhaka (৳70)</SelectItem>
+                    <SelectItem value="outside">Outside Dhaka (৳120)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {!selectedZone && currentStep === 0 && (
+                  <p className="text-xs text-muted-foreground">Select your delivery zone to see shipping cost</p>
+                )}
               </div>
 
-              <Button type="submit" className="h-12 w-full rounded-full font-bold shadow-lg shadow-primary/20 transition-transform active:scale-95">
+              <Button type="submit" disabled={!selectedZone} className="h-12 w-full rounded-full font-bold shadow-lg shadow-primary/20 transition-transform active:scale-95">
                 Continue to Payment <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </form>
@@ -351,31 +358,16 @@ export default function CheckoutPage() {
           {currentStep === 1 && (
             <div className="space-y-6 animate-in zoom-in-95 duration-300">
               <h2 className="text-2xl font-bold flex items-center gap-2">
-                <CreditCard className="h-6 w-6 text-primary" /> Select Payment Method
+                <CreditCard className="h-6 w-6 text-primary" /> Payment Method
               </h2>
-              <div className="grid gap-3">
-                {[
-                  { id: "bkash", label: "Mobile Banking (bKash/Nagad)" },
-                  { id: "card", label: "Credit/Debit Card" },
-                  { id: "cod", label: "Cash on Delivery" },
-                ].map((p) => (
-                  <label
-                    key={p.id}
-                    className={cn(
-                      "flex items-center justify-between rounded-2xl border p-4 cursor-pointer transition-colors group",
-                      paymentMethod === p.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-                    )}
-                  >
-                    <span className="font-bold">{p.label}</span>
-                    <div className={cn(
-                      "h-5 w-5 rounded-full border-2 transition-colors",
-                      paymentMethod === p.id ? "border-primary bg-primary" : "border-muted-foreground/30"
-                    )}>
-                      {paymentMethod === p.id && <div className="flex h-full items-center justify-center"><CheckCircle2 className="h-3 w-3 text-primary-foreground" /></div>}
-                    </div>
-                    <input type="radio" name="payment" value={p.id} checked={paymentMethod === p.id} onChange={() => setPaymentMethod(p.id)} className="sr-only" />
-                  </label>
-                ))}
+              <div className="rounded-2xl border border-primary bg-primary/5 p-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold">Cash on Delivery (COD)</span>
+                  <div className="h-5 w-5 rounded-full border-2 border-primary bg-primary flex items-center justify-center">
+                    <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Pay with cash when your order arrives.</p>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground bg-emerald-50 dark:bg-emerald-950/30 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900">
                 <ShieldCheck className="h-5 w-5 text-emerald-600 shrink-0" />
@@ -488,8 +480,4 @@ export default function CheckoutPage() {
       </div>
     </div>
   )
-}
-
-function cn(...inputs: (string | false | undefined | null)[]) {
-  return inputs.filter(Boolean).join(" ")
 }

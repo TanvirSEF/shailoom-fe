@@ -305,7 +305,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ tracking
               variant="outline"
               size="sm"
               className="h-8 text-xs rounded-lg"
-              onClick={() => window.open(`https://portal.packzy.com/track/${order.steadfast!.tracking_code}`, "_blank")}
+              onClick={() => window.open(`https://steadfast.com.bd/tracking?tracking_code=${order.steadfast!.tracking_code}`, "_blank")}
             >
               <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
               Track on Steadfast

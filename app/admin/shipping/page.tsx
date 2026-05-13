@@ -368,7 +368,7 @@ export default function ShippingPage() {
                         variant="ghost"
                         size="icon"
                         className="size-7"
-                        onClick={() => window.open(`https://portal.packzy.com/track/${order.steadfast?.tracking_code}`, "_blank")}
+                        onClick={() => window.open(`https://steadfast.com.bd/tracking?tracking_code=${order.steadfast?.tracking_code}`, "_blank")}
                         title="Track on Steadfast"
                       >
                         <IconExternalLink className="size-3.5" />
