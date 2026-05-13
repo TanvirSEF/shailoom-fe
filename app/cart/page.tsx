@@ -32,7 +32,7 @@ export default function CartPage() {
           <h2 className="text-3xl font-bold tracking-tight">Your cart is empty</h2>
           <p className="text-muted-foreground">Looks like you haven't added anything to your cart yet.</p>
         </div>
-        <Link href="/shop/sarees">
+        <Link href="/new-arrivals">
           <Button size="lg" className="rounded-full px-8 font-bold uppercase tracking-widest">
             Continue Shopping
           </Button>
