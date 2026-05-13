@@ -7,53 +7,21 @@ import { Heart, ShoppingBag, Star } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ProductQuickView } from "@/components/product-quick-view"
-
-const PRODUCTS = [
-  {
-    id: 1,
-    name: "Classic Silk Jamdani Saree",
-    category: "Saree",
-    price: 12500,
-    originalPrice: 15000,
-    image: "/images/products/jamdani-1.png",
-    rating: 4.8,
-    isNew: true,
-  },
-  {
-    id: 2,
-    name: "Designer Boutique 3-Piece Suite",
-    category: "Three-Piece",
-    price: 5800,
-    originalPrice: 7200,
-    image: "/images/products/boutique-1.png",
-    rating: 4.9,
-    isHot: true,
-  },
-  {
-    id: 3,
-    name: "Royal Muslin Handloom Saree",
-    category: "Saree",
-    price: 22000,
-    originalPrice: 25000,
-    image: "/images/products/muslin-1.png",
-    rating: 5.0,
-    isNew: true,
-  },
-  {
-    id: 4,
-    name: "Floral Print Salwar Kameez",
-    category: "Three-Piece",
-    price: 4500,
-    originalPrice: 5500,
-    image: "/images/products/kameez-1.png",
-    rating: 4.7,
-  },
-]
+import { useApiQuery } from "@/hooks/use-api"
+import type { Product } from "@/types/product"
 
 export function NewArrivals() {
   const [selectedProduct, setSelectedProduct] = React.useState<any>(null)
   const [isQuickViewOpen, setIsQuickViewOpen] = React.useState(false)
+
+  const { data, isLoading } = useApiQuery<{ products: Product[] }>(
+    ["newArrivals"],
+    "/products?is_new_arrival=true&sort_by=newest&limit=8"
+  )
+
+  const products = data?.products ?? []
 
   const handleQuickView = (product: any) => {
     setSelectedProduct(product)
@@ -74,7 +42,7 @@ export function NewArrivals() {
             </p>
           </div>
           <Link
-            href="/shop/new-arrivals"
+            href="/new-arrivals"
             className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
           >
             View All New Arrivals &rarr;
@@ -82,95 +50,99 @@ export function NewArrivals() {
         </div>
 
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {PRODUCTS.map((product) => (
-            <div
-              key={product.id}
-              className="group relative flex flex-col overflow-hidden rounded-xl border border-border/50 bg-background transition-all duration-500 hover:shadow-2xl"
-            >
-              {/* Image Container */}
-              <div className="relative aspect-[3/4] overflow-hidden bg-muted">
-                <Image
-                  src={product.image || "/images/placeholder.png"}
-                  alt={product.name}
-                  fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-
-                {/* Badges */}
-                <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
-                  {product.isNew && (
-                    <Badge className="border-none bg-primary px-3 py-1 text-[10px] font-bold tracking-wider text-white uppercase">
-                      New
-                    </Badge>
-                  )}
-                  {product.isHot && (
-                    <Badge className="border-none bg-destructive px-3 py-1 text-[10px] font-bold tracking-wider text-white uppercase">
-                      Hot
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Quick Actions */}
-                <div className="absolute top-3 right-3 z-10 flex translate-x-12 flex-col gap-2 opacity-0 transition-all duration-500 group-hover:translate-x-0 group-hover:opacity-100">
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    className="rounded-full shadow-md hover:bg-primary hover:text-white"
-                  >
-                    <Heart className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    className="rounded-full shadow-md hover:bg-primary hover:text-white"
-                  >
-                    <ShoppingBag className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Quick View Overlay (Mobile & Hover) */}
-                <div className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/80 to-transparent p-4 transition-transform duration-500 group-hover:translate-y-0">
-                  <Button
-                    className="w-full rounded-full bg-white font-semibold text-black hover:bg-white/90"
-                    onClick={() => handleQuickView(product)}
-                  >
-                    Quick View
-                  </Button>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="flex flex-1 flex-col p-5">
-                <div className="mb-2 flex items-center gap-1">
-                  <div className="flex text-yellow-400">
-                    <Star className="h-3 w-3 fill-current" />
+          {isLoading
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex flex-col overflow-hidden rounded-xl border">
+                  <Skeleton className="aspect-[3/4] w-full" />
+                  <div className="space-y-3 p-5">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-5 w-full" />
+                    <Skeleton className="h-5 w-20" />
                   </div>
-                  <span className="text-[10px] font-bold text-muted-foreground">
-                    {product.rating}
-                  </span>
-                  <span className="mx-1 text-muted-foreground/30">|</span>
-                  <span className="text-[10px] font-medium tracking-tighter text-muted-foreground uppercase">
-                    {product.category}
-                  </span>
                 </div>
+              ))
+            : products.map((product) => (
+                <Link
+                  key={product.id}
+                  href={`/product/${product.id}`}
+                  className="group relative flex flex-col overflow-hidden rounded-xl border border-border/50 bg-background transition-all duration-500 hover:shadow-2xl"
+                >
+                  <div className="relative aspect-[3/4] overflow-hidden bg-muted">
+                    <Image
+                      src={product.images?.[0] || product.image || "/images/placeholder.png"}
+                      alt={product.name}
+                      fill
+                      className="object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
 
-                <h3 className="mb-2 line-clamp-1 text-base font-bold text-foreground transition-colors group-hover:text-primary">
-                  {product.name}
-                </h3>
+                    {product.is_on_sale && (
+                      <Badge className="absolute top-3 left-3 z-10 border-none bg-destructive px-3 py-1 text-[10px] font-bold tracking-wider text-white uppercase">
+                        Sale
+                      </Badge>
+                    )}
 
-                <div className="mt-auto flex items-center gap-3">
-                  <span className="text-lg font-bold text-foreground">
-                    ৳{product.price.toLocaleString()}
-                  </span>
-                  {product.originalPrice && (
-                    <span className="text-sm text-muted-foreground line-through opacity-60">
-                      ৳{product.originalPrice.toLocaleString()}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
+                    <div className="absolute top-3 right-3 z-10 flex translate-x-12 flex-col gap-2 opacity-0 transition-all duration-500 group-hover:translate-x-0 group-hover:opacity-100">
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        className="rounded-full shadow-md hover:bg-primary hover:text-white"
+                      >
+                        <Heart className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        className="rounded-full shadow-md hover:bg-primary hover:text-white"
+                      >
+                        <ShoppingBag className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    <div
+                      className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/80 to-transparent p-4 transition-transform duration-500 group-hover:translate-y-0"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleQuickView(product)
+                      }}
+                    >
+                      <Button className="w-full rounded-full bg-white font-semibold text-black hover:bg-white/90">
+                        Quick View
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-1 flex-col p-5">
+                    <div className="mb-2 flex items-center gap-1">
+                      <div className="flex text-yellow-400">
+                        <Star className="h-3 w-3 fill-current" />
+                      </div>
+                      <span className="text-[10px] font-bold text-muted-foreground">
+                        {product.average_rating ?? product.rating ?? "—"}
+                      </span>
+                      <span className="mx-1 text-muted-foreground/30">|</span>
+                      <span className="text-[10px] font-medium tracking-tighter text-muted-foreground uppercase">
+                        {product.category}
+                      </span>
+                    </div>
+
+                    <h3 className="mb-2 line-clamp-1 text-base font-bold text-foreground transition-colors group-hover:text-primary">
+                      {product.name}
+                    </h3>
+
+                    <div className="mt-auto flex items-center gap-3">
+                      <span className="text-lg font-bold text-foreground">
+                        ৳{product.price.toLocaleString()}
+                      </span>
+                      {product.original_price && (
+                        <span className="text-sm text-muted-foreground line-through opacity-60">
+                          ৳{product.original_price.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
         </div>
       </div>
 

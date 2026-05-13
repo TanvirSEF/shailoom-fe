@@ -9,6 +9,7 @@ import {
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
 const BANNERS = [
@@ -87,19 +88,23 @@ export function Hero() {
                     {banner.description}
                   </p>
                   <div className="flex flex-wrap justify-center gap-4">
-                    <Button
-                      size="lg"
-                      className="h-12 px-8 text-lg font-semibold shadow-lg"
-                    >
-                      Shop New Arrivals
-                    </Button>
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="h-12 border-white/20 bg-white/10 px-8 text-lg font-semibold text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-white hover:text-black"
-                    >
-                      View Collections
-                    </Button>
+                    <Link href="/new-arrivals">
+                      <Button
+                        size="lg"
+                        className="h-12 px-8 text-lg font-semibold shadow-lg"
+                      >
+                        Shop New Arrivals
+                      </Button>
+                    </Link>
+                    <Link href="/lookbook">
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="h-12 border-white/20 bg-white/10 px-8 text-lg font-semibold text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-white hover:text-black"
+                      >
+                        View Collections
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               </div>
