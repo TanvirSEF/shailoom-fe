@@ -23,7 +23,7 @@ import { z } from "zod"
 import { useApiQuery, useApiMutation } from "@/hooks/use-api"
 import { productService } from "@/lib/services/product-service"
 import type { PaginatedProductsResponse } from "@/types/product"
-import { cn } from "@/lib/utils"
+import { cn, getErrorMessage } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -144,7 +144,7 @@ function AddProductDialog({
       onSuccess()
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.detail ?? "Failed to create product")
+      toast.error(getErrorMessage(err, "Failed to create product"))
     },
   })
 
@@ -582,7 +582,7 @@ function EditProductDialog({
         onSuccess()
       },
       onError: (err: any) => {
-        toast.error(err?.response?.data?.detail ?? "Failed to update product")
+        toast.error(getErrorMessage(err, "Failed to update product"))
       },
     }
   )
@@ -998,7 +998,7 @@ export default function ProductsPage() {
       refetch()
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.detail ?? "Failed to delete product")
+      toast.error(getErrorMessage(err, "Failed to delete product"))
     },
   })
 
@@ -1153,7 +1153,7 @@ export default function ProductsPage() {
       {isError && (
         <div className="flex items-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <IconAlertTriangle className="size-4 shrink-0" />
-          <span>Failed to load products: {(error as any)?.response?.data?.detail ?? (error as any)?.message ?? "Unknown error"}</span>
+          <span>Failed to load products: {getErrorMessage(error, "Unknown error")}</span>
           <Button variant="ghost" size="sm" className="ml-auto rounded-lg" onClick={() => refetch()}>Retry</Button>
         </div>
       )}

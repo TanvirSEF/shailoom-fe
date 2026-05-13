@@ -18,7 +18,7 @@ import {
 import { toast } from "sonner"
 import { useApiQuery, useApiMutation } from "@/hooks/use-api"
 import { adminService } from "@/lib/services/admin-service"
-import { cn } from "@/lib/utils"
+import { cn, getErrorMessage } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -143,7 +143,7 @@ export default function OrdersPage() {
         setSelectedOrder(null)
       },
       onError: (error: any) => {
-        toast.error(error.response?.data?.detail || "Failed to create consignment")
+        toast.error(getErrorMessage(error, "Failed to create consignment"))
       },
     }
   )

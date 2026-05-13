@@ -16,7 +16,7 @@ import { userService } from "@/lib/services/user-service"
 import { profileUpdateSchema, ProfileUpdateValues } from "@/lib/validations/user.schema"
 import { User } from "@/types/auth"
 import type { Address } from "@/types/user"
-import { cn } from "@/lib/utils"
+import { cn, getErrorMessage } from "@/lib/utils"
 import { useAuthStore } from "@/store/use-auth-store"
 
 function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value?: string | null }) {
@@ -282,7 +282,7 @@ function AddressBookSection() {
       refetch()
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.detail || "Failed to add address")
+      toast.error(getErrorMessage(err, "Failed to add address"))
     },
   })
 
@@ -292,7 +292,7 @@ function AddressBookSection() {
       refetch()
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.detail || "Failed to delete")
+      toast.error(getErrorMessage(err, "Failed to delete"))
     },
   })
 
@@ -302,7 +302,7 @@ function AddressBookSection() {
       refetch()
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.detail || "Failed to update")
+      toast.error(getErrorMessage(err, "Failed to update"))
     },
   })
 

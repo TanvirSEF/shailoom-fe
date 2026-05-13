@@ -15,7 +15,7 @@ import {
 import { toast } from "sonner"
 import { useApiQuery, useApiMutation } from "@/hooks/use-api"
 import { adminService } from "@/lib/services/admin-service"
-import { cn } from "@/lib/utils"
+import { cn, getErrorMessage } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -134,7 +134,7 @@ export default function ShippingPage() {
         setSearchResult(res.data)
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || "Not found")
+      toast.error(getErrorMessage(error, "Not found"))
     } finally {
       setSearchLoading(false)
     }

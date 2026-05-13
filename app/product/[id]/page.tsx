@@ -14,7 +14,7 @@ import {
   Loader2,
   Send,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, getErrorMessage } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
@@ -105,8 +105,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         refetchReviews()
       },
       onError: (error: any) => {
-        const message = error.response?.data?.detail || "Failed to submit review."
-        toast.error(message)
+        toast.error(getErrorMessage(error, "Failed to submit review."))
       },
     }
   )

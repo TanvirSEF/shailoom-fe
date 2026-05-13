@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/sheet"
 import { useCartStore } from "@/store/use-cart-store"
 import { useApiQuery } from "@/hooks/use-api"
-import { cn } from "@/lib/utils"
+import { cn, getErrorMessage } from "@/lib/utils"
 import { toast } from "sonner"
 import type { Product, PaginatedProductsResponse } from "@/types/product"
 
@@ -419,7 +419,7 @@ function SalePage() {
               <div className="mb-8 flex items-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
                 <span>
                   Failed to load products.{" "}
-                  {(error as any)?.response?.data?.detail || (error as any)?.message || ""}
+                  {getErrorMessage(error, "")}
                 </span>
                 <Button variant="ghost" size="sm" className="ml-auto" onClick={() => refetch()}>
                   Retry

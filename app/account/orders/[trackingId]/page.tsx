@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge"
 import { useApiQuery, useApiMutation } from "@/hooks/use-api"
 import { orderService } from "@/lib/services/order-service"
 import { toast } from "sonner"
+import { getErrorMessage } from "@/lib/utils"
 
 interface OrderItem {
   name: string
@@ -135,7 +136,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ tracking
         refetch()
       },
       onError: (error: any) => {
-        toast.error(error.response?.data?.detail || "Failed to cancel order.")
+        toast.error(getErrorMessage(error, "Failed to cancel order."))
       },
     }
   )

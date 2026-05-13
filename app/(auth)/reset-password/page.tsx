@@ -12,7 +12,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
+import { cn, getErrorMessage } from "@/lib/utils"
 import { resetPasswordSchema, type ResetPasswordValues } from "@/lib/validations/auth.schema"
 import { useApiMutation } from "@/hooks/use-api"
 import { authService } from "@/lib/services/auth-service"
@@ -48,8 +48,7 @@ function ResetPasswordForm() {
         router.push("/login")
       },
       onError: (error: any) => {
-        const message = error.response?.data?.detail || "Invalid or expired token. Please try again."
-        toast.error(message)
+        toast.error(getErrorMessage(error, "Invalid or expired token. Please try again."))
       },
     }
   )

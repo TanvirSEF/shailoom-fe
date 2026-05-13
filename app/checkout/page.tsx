@@ -25,7 +25,7 @@ import { useAuthStore } from "@/store/use-auth-store"
 import { useApiMutation, useApiQuery } from "@/hooks/use-api"
 import { orderService } from "@/lib/services/order-service"
 import { userService } from "@/lib/services/user-service"
-import { cn } from "@/lib/utils"
+import { cn, getErrorMessage } from "@/lib/utils"
 import type { Address } from "@/types/user"
 
 const STEPS = ["Shipping", "Payment"]
@@ -129,8 +129,7 @@ export default function CheckoutPage() {
         toast.success("Order placed successfully!")
       },
       onError: (error: any) => {
-        const message = error.response?.data?.detail || "Failed to place order. Please try again."
-        toast.error(typeof message === "string" ? message : "Failed to place order.")
+        toast.error(getErrorMessage(error, "Failed to place order. Please try again."))
       },
     }
   )
@@ -148,7 +147,7 @@ export default function CheckoutPage() {
       toast.success(`Coupon applied! You save ৳${discount}`)
     } catch (error: any) {
       setCouponDiscount(0)
-      setCouponMessage(error.response?.data?.detail || "Invalid coupon code")
+      setCouponMessage(getErrorMessage(error, "Invalid coupon code"))
       toast.error("Invalid coupon code")
     } finally {
       setIsValidatingCoupon(false)
@@ -240,6 +239,7 @@ export default function CheckoutPage() {
                         type="button"
                         onClick={() => {
                           setSelectedAddressId(addr.id)
+                          setSelectedZone(addr.city?.toLowerCase() === "dhaka" ? "dhaka" : "outside")
                           reset({
                             full_name: addr.full_name,
                             phone_number: addr.phone_number,

@@ -12,7 +12,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
+import { cn, getErrorMessage } from "@/lib/utils"
 import { forgotPasswordSchema, type ForgotPasswordValues } from "@/lib/validations/auth.schema"
 import { useApiMutation } from "@/hooks/use-api"
 import { authService } from "@/lib/services/auth-service"
@@ -40,8 +40,7 @@ export default function ForgotPasswordPage() {
         toast.success("Reset link sent to your email!")
       },
       onError: (error: any) => {
-        const message = error.response?.data?.detail || "Something went wrong. Please try again."
-        toast.error(message)
+        toast.error(getErrorMessage(error, "Something went wrong. Please try again."))
       },
     }
   )

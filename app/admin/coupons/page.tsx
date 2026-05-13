@@ -5,7 +5,7 @@ import { IconSearch, IconRefresh, IconPlus, IconTicket } from "@tabler/icons-rea
 import { toast } from "sonner"
 import { useApiQuery, useApiMutation } from "@/hooks/use-api"
 import { adminService, type Coupon, type CreateCouponData } from "@/lib/services/admin-service"
-import { cn } from "@/lib/utils"
+import { cn, getErrorMessage } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -64,7 +64,7 @@ export default function CouponsPage() {
         setDialogOpen(false)
       },
       onError: (error: any) => {
-        toast.error(error.response?.data?.detail?.[0]?.msg || error.response?.data?.detail || "Failed to create coupon")
+        toast.error(getErrorMessage(error, "Failed to create coupon"))
       },
     }
   )
@@ -77,7 +77,7 @@ export default function CouponsPage() {
         refetch()
       },
       onError: (error: any) => {
-        toast.error(error.response?.data?.detail || "Failed to deactivate coupon")
+        toast.error(getErrorMessage(error, "Failed to deactivate coupon"))
       },
     }
   )
@@ -90,7 +90,7 @@ export default function CouponsPage() {
         refetch()
       },
       onError: (error: any) => {
-        toast.error(error.response?.data?.detail || "Failed to activate coupon")
+        toast.error(getErrorMessage(error, "Failed to activate coupon"))
       },
     }
   )
@@ -103,7 +103,7 @@ export default function CouponsPage() {
         refetch()
       },
       onError: (error: any) => {
-        toast.error(error.response?.data?.detail || "Failed to delete coupon")
+        toast.error(getErrorMessage(error, "Failed to delete coupon"))
       },
     }
   )
