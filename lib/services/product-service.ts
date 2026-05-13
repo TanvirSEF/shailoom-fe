@@ -18,6 +18,10 @@ export const productService = {
     }),
   getReviews: (productId: string | number) => 
     apiClient.get(`/products/${productId}/reviews`),
-  submitReview: (productId: string | number, data: any) => 
-    apiClient.post(`/products/${productId}/reviews`, data),
+  submitReview: (productId: string | number, data: { rating: number; comment: string }) => {
+    const formData = new FormData()
+    formData.append("rating", String(data.rating))
+    formData.append("comment", data.comment)
+    return apiClient.post(`/products/${productId}/reviews`, formData)
+  },
 };

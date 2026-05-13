@@ -10,7 +10,7 @@ import {
   Star,
   ShieldCheck,
   Truck,
-  Phone,
+
   Loader2,
   Send,
 } from "lucide-react"
@@ -29,10 +29,11 @@ import { productService } from "@/lib/services/product-service"
 import type { Product } from "@/types/product"
 
 interface Review {
-  id: number
-  user: { username: string }
+  product_id: string
+  user_email: string
   rating: number
   comment: string
+  image_url?: string | null
   created_at: string
 }
 
@@ -83,7 +84,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   )
 
   // Fetch reviews
-  const { data: reviewsData, refetch: refetchReviews } = useApiQuery<{ reviews: Review[]; average_rating?: number; total_reviews?: number }>(
+  const { data: reviewsData, refetch: refetchReviews } = useApiQuery<Review[]>(
     ["productReviews", productId],
     `/products/${productId}/reviews`
   )
@@ -111,9 +112,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   )
 
   const images = product?.images || (product?.image ? [product.image] : [])
-  const reviews = reviewsData?.reviews || []
-  const avgRating = reviewsData?.average_rating || product?.rating || 0
-  const totalReviews = reviewsData?.total_reviews || product?.review_count || reviews.length
+  const reviews = Array.isArray(reviewsData) ? reviewsData : []
+  const avgRating = product?.average_rating || 0
+  const totalReviews = product?.review_count || reviews.length
 
   const handleAddToCart = () => {
     if (!product) return
@@ -301,9 +302,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   Buy Now
                 </Button>
               </div>
-              <Button size="lg" variant="outline" className="h-14 w-full rounded-2xl text-base font-bold uppercase tracking-[0.1em] border-emerald-500/20 text-emerald-600 hover:bg-emerald-50 transition-all hover:scale-[1.01]">
-                <Phone className="mr-2 h-5 w-5" /> Order via WhatsApp
-              </Button>
             </div>
 
             {/* Specifications */}
@@ -413,16 +411,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           {/* Reviews List */}
           {reviews.length > 0 ? (
             <div className="space-y-4">
-              {reviews.map((review) => (
-                <div key={review.id} className="rounded-2xl border bg-card p-6">
+              {reviews.map((review, idx) => (
+                <div key={idx} className="rounded-2xl border bg-card p-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-3">
                         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                          {review.user.username.charAt(0).toUpperCase()}
+                          {review.user_email.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-medium">{review.user.username}</p>
+                          <p className="font-medium">{review.user_email.split("@")[0]}</p>
                           <p className="text-xs text-muted-foreground">
                             {new Date(review.created_at).toLocaleDateString("en-US", {
                               year: "numeric",
