@@ -41,7 +41,7 @@ export const adminService = {
   // Users
   getAllUsers: () => apiClient.get("/admin/users"),
   updateUserRole: (email: string, role: string) => 
-    apiClient.patch(`/admin/users/${email}/role`, { role }),
+    apiClient.patch(`/admin/users/${encodeURIComponent(email)}/role?new_role=${encodeURIComponent(role)}`, { role }),
 
   // Coupons
   getAllCoupons: () => apiClient.get("/admin/coupons"),

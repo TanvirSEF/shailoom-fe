@@ -120,7 +120,7 @@ export default function UsersPage() {
             <SelectContent>
               <SelectItem value="all">All Roles</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="user">User</SelectItem>
+              <SelectItem value="customer">Customer</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline" size="icon" className="rounded-xl cursor-pointer" onClick={() => refetch()}>
@@ -183,7 +183,7 @@ export default function UsersPage() {
                             : "bg-muted text-muted-foreground"
                         )}
                       >
-                        {user.role || "user"}
+                        {user.role === "admin" ? "Admin" : "Customer"}
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
@@ -193,16 +193,16 @@ export default function UsersPage() {
                     </TableCell>
                     <TableCell>
                       <Select
-                        value={user.role || "user"}
+                        value={user.role || "customer"}
                         onValueChange={(value) =>
                           updateRoleMutation.mutate({ email: user.email!, role: value })
                         }
                       >
-                        <SelectTrigger className="h-8 w-28 rounded-lg text-xs">
+                        <SelectTrigger className="h-8 w-32 rounded-lg text-xs">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value="customer">Customer</SelectItem>
                           <SelectItem value="admin">Admin</SelectItem>
                         </SelectContent>
                       </Select>
