@@ -23,7 +23,7 @@ import { authService } from "@/lib/services/auth-service";
 import { useAuthStore } from "@/store/use-auth-store";
 import { AuthResponse } from "@/types/auth";
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/";
@@ -243,5 +243,17 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <React.Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <SignupForm />
+    </React.Suspense>
   );
 }
